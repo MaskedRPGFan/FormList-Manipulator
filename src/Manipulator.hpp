@@ -4,77 +4,130 @@
 
 namespace flm
 {
+	/**
+	 * \brief The main class that manages the mechanism for manipulating Forms.
+	 */
 	class Manipulator
 	{
 		public:
+			/**
+			 * \brief Returns debug mode state.
+			 * \return              - Debug mode state.
+			 */
 			bool DebugMode() const;
+			/**
+			 * \brief Sets debug mode state.
+			 * \param mode          - New debug mode state.
+			 */
 			void SetDebugMode(bool mode);
 
+			/**
+			 * \brief Finds all FormLists whose use is simplified.
+			 */
 			void FindLists();
+			/**
+			 * \brief Finds all config files.
+			 */
 			void FindConfigs();
+			/**
+			 * \brief Reads plants from configuration files and adds the correct ones to internal structures.
+			 */
 			void AddPlants();
+			/**
+			 * \brief Reads toys from configuration files and adds the correct ones to internal structures.
+			 */
 			void AddToys();
+			/**
+			 * \brief Reads general forms from configuration files and adds the correct ones to internal structures.
+			 */
 			void AddToFormLists();
-
+			/**
+			 * \brief Generates summary for config files.
+			 */
 			void Summary();
 
 		private:
-			bool debug_mode_ = false;
+			std::vector<std::string_view> keywords_ = { "formlist"sv, "plant"sv, "btoys"sv, "gtoys"sv, "alias"sv, "group"sv }; /** Keywords for usage in the configuration files. */
 
-			RE::BGSListForm* seeds_list_ = nullptr;  /** Form list with seeds to plant. */
-			RE::BGSListForm* plants_list_ = nullptr; /** Form list with plants to grow. */
+			bool debug_mode_ = false;                   /** Mode for more detailed information. */
+			RE::BGSListForm* seeds_list_ = nullptr;     /** Forms with seeds to plant. */
+			RE::BGSListForm* plants_list_ = nullptr;    /** Forms with plants to grow. */
+			RE::BGSListForm* boy_toys_list_ = nullptr;  /** Forms with boy's toys. */
+			RE::BGSListForm* girl_toys_list_ = nullptr; /** Forms with girl's toys. */
 
-			RE::BGSListForm* boy_toys_list_ = nullptr;
-			RE::BGSListForm* girl_toys_list_ = nullptr;
+			std::map<std::string, std::vector<RE::BGSListForm*>> aliases_;     /** All valid Aliases. */
+			std::map<std::string, std::vector<RE::TESForm*>> groups_;          /** All valid Groups. */
+			std::map<RE::BGSListForm*, std::vector<RE::TESForm*>> form_lists_; /** All valid Forms for FormLists. */
+			std::vector<std::pair<RE::TESForm*, RE::TESForm*>> plants_;        /** All valid Forms with seeds and plants. */
+			std::vector<RE::TESForm*> boy_toys_;                               /** All valid Forms with boy's toys. */
+			std::vector<RE::TESForm*> girl_toys_;                              /** All valid Forms with girl's toys. */
 
-			std::map<RE::BGSListForm*, std::vector<RE::TESForm*>> form_lists_;
-			std::vector<std::pair<RE::TESForm*, RE::TESForm*>> plants_;
-			std::vector<RE::TESForm*> boy_toys_;
-			std::vector<RE::TESForm*> girl_toys_;
+			int total_valid_entries_ = 0;      /** How many valid entries is. */
+			int total_invalid_entries_ = 0;    /** How many invalid entries is. */
+			int valid_configs_ = 0;            /** How many valid configs is. */
+			int invalid_configs_ = 0;          /** How many invalid configs is. */
+			int non_existent_aliases_ = 0;     /** How many valid aliases is. */
+			int non_existent_groups_ = 0;      /** How many in valid aliases is. */
+			int total_missing_form_lists_ = 0; /** How many missing FormLists is. */
+			int fl_total_duplicates_ = 0;      /** Total amount of FromLists duplicates. */
+			int fl_total_added_ = 0;           /** Total amount of added FormLists. */
+			int plants_duplicates_ = 0;        /** Total amount of Plants duplicates. */
+			int plants_added_ = 0;             /** Total amount of added Plants. */
+			int boy_toys_added_ = 0;           /** Total amount of added boy's toys. */
+			int boy_toys_duplicates_ = 0;      /** Total amount of boy's toys duplicates. */
+			int girl_toys_added_ = 0;          /** Total amount of added girl's toys. */
+			int girl_toys_duplicates_ = 0;     /** Total amount of girl's toys duplicates. */
+			int total_found_forms_ = 0;        /** Total amount of found Forms. */
+			int total_missing_forms_ = 0;      /** Total amount of missing Forms. */
+			int total_aliases_ = 0;            /** Total amount of found Aliases. */
+			int aliases_duplicates_ = 0;       /** Total amount of Aliases duplicates. */
+			int total_groups_ = 0;             /** Total amount of found Groups. */
+			int groups_duplicates_ = 0;        /** Total amount of Groups duplicates. */
 
+			/**
+			 * \brief Finds FormList based on FormEditorID.
+			 * \param fei                       - FormEditorID of the FormList.
+			 * \param formList                  - A pointer to the FormList to be filled in.
+			 */
 			void findList(const std::string_view& fei, RE::BGSListForm*& formList) const;
+			/**
+			 * \brief Adds Form and FromList to internal structure based on string entry. String is validated.
+			 * \param entry                     - String in the format FList|Form, Form, #Group, etc.
+			 * \return                          - True, if everything went fine.
+			 */
 			bool addFormList(const std::string& entry);
+			/**
+			 * \brief Adds Seed end Plant to internal structure based on string entry. String is validated.
+			 * \param entry                     - String in the format Seed|Plant
+			 * \return                          - True, if everything went fine.
+			 */
 			bool addPlant(const std::string& entry);
+			/**
+			 * \brief Adds Toys to internal structure based on string entry. String is validated. If parameter Boy is set to false, toys are for girls.
+			 * \param entry                     - String in the format Form, Form, #Group, etc.
+			 * \param boy                       - If true toys are for boys, if false for girls.
+			 * \return                          - True, if everything went fine.
+			 */
 			bool addToys(const std::string& entry, bool boy = true);
+			/**
+			 * \brief Adds Alias to internal structure based on string entry. String is validated.
+			 * \param entry                     - String in the format NameForAlias|FList, FList, etc.
+			 * \return                          - True, if everything went fine.
+			 */
 			bool addAlias(const std::string& entry);
+			/**
+			 * \brief Adds Group to internal structure based on string entry. String is validated.
+			 * \param entry                     - String in the format NameForGroup|From, From, etc.
+			 * \return                          - True, if everything went fine.
+			 */
 			bool addGroup(const std::string& entry);
+			/**
+			 * \brief Adds From to FormList. Duplicates are omitted.
+			 * \param list                      - FromList where Form will be added.
+			 * \param form                      - Form to add.
+			 * \return                          - True, if everything went fine.
+			 */
 			static bool addFormToFormList(RE::BGSListForm*& list, RE::TESForm* form);
-
-			// How many valid entries is.
-			int total_valid_entries_ = 0;
-			// How many invalid entries is.
-			int total_invalid_entries_ = 0;
-			// How many valid configs is.
-			int valid_configs_ = 0;
-			// How many invalid configs is.
-			int invalid_configs_ = 0;
-
-			int non_existent_aliases_ = 0;
-			int non_existent_groups_ = 0;
-
-			int total_missing_form_lists_ = 0;
-
-			int fl_total_duplicates_ = 0;
-			int fl_total_added_ = 0;
-			int plants_duplicates_ = 0;
-			int plants_added_ = 0;
-			int boy_toys_added_ = 0;
-			int boy_toys_duplicates_ = 0;
-			int girl_toys_added_ = 0;
-			int girl_toys_duplicates_ = 0;
-
-			int total_found_forms_ = 0;
-			int total_missing_forms_ = 0;
-
-			int total_aliases_ = 0;
-			int aliases_duplicates_ = 0;
-
-			int total_groups_ = 0;
-			int groups_duplicates_ = 0;
-
-			std::vector<std::string_view> keywords_ = { "formlist"sv, "plant"sv, "btoys"sv, "gtoys"sv, "alias"sv, "group"sv };
-			std::map<std::string, std::vector<RE::BGSListForm*>> aliases_;
-			std::map<std::string, std::vector<RE::TESForm*>> groups_;
 	};
 
 	inline bool Manipulator::DebugMode() const

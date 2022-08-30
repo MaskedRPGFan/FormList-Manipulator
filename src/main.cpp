@@ -6,6 +6,9 @@
 
 namespace
 {
+	/**
+	 * \brief Initialize logging for plugin.
+	 */
 	void InitializeLog()
 	{
 		auto path = logger::log_directory();
@@ -24,6 +27,10 @@ namespace
 		spdlog::set_pattern("[%=17!s::%=17!!:%3#]: [%^%=7l%$] %v"s);
 	}
 
+	/**
+	 * \brief Sink to capture SKSE events.
+	 * \param event - Submitted event.
+	 */
 	void OnEvent(SKSE::MessagingInterface::Message* event)
 	{
 		// After all the ESM/ESL/ESP plugins are loaded.
@@ -38,6 +45,10 @@ namespace
 		}
 	}
 
+	/**
+	 * \brief Returns the type of Skyrim that is running. Anniversary Edition, Special Edition, VR or Unknown.
+	 * \return - Type of Skyrim that is running.
+	 */
 	static std::string_view GetRuntimeString()
 	{
 		switch(REL::Module::GetRuntime())
@@ -53,6 +64,9 @@ namespace
 	}
 }
 
+/**
+ * \brief For AE versions of the executable - SKSE looks for static data in the DLL with the plugin metadata.
+ */
 extern "C" [[maybe_unused]] DLLEXPORT constinit auto SKSEPlugin_Version = []() noexcept
 {
 	SKSE::PluginVersionData v;
@@ -66,6 +80,11 @@ extern "C" [[maybe_unused]] DLLEXPORT constinit auto SKSEPlugin_Version = []() n
 	return v;
 }();
 
+/**
+ * \brief SKSE's way of identifying an SKSE plugin.
+ * \param pluginInfo    - Plugin info structure.
+ * \return              - True, if everything went fine.
+ */
 extern "C" [[maybe_unused]] DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface*, SKSE::PluginInfo* pluginInfo)
 {
 	pluginInfo->name = Plugin::NAME.data();
@@ -74,6 +93,12 @@ extern "C" [[maybe_unused]] DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::
 	return true;
 }
 
+/**
+ * \brief Once valid SKSE plugins have been identified, SKSE will call their SKSEPlugin_Load functions one at a time.
+ * This function must also be present or the SKSE plugin will not be loaded, and the function must have a particular signature.
+ * \param skse      - SKSE interface.
+ * \return          - True, if everything went fine.
+ */
 extern "C" [[maybe_unused]] DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* skse)
 {
 	InitializeLog();

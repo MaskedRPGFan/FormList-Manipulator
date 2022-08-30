@@ -2,23 +2,41 @@
 
 namespace flm
 {
+	/**
+	 * \brief Returns a poniter to FormList based on mod name and record FromID.
+	 * \param pluginName    - Name of the mod with extension.
+	 * \param rawFormId     - FormID of the record.
+	 * \return              - FormList pointer or nullptr if not found.
+	 */
 	inline RE::BGSListForm* GetFormList(const std::string& pluginName, const std::uint32_t rawFormId)
 	{
 		const auto data_handler = RE::TESDataHandler::GetSingleton();
 		return data_handler ? data_handler->LookupForm<RE::BGSListForm>(rawFormId, pluginName) : nullptr;
 	}
 
+	/**
+	 * \brief Returns a poniter to Form based on mod name and record FromID.
+	 * \param pluginName    - Name of the mod with extension.
+	 * \param rawFormId     - FormID of the record.
+	 * \return              - Form (TESForm) pointer or nullptr if not found.
+	 */
 	inline RE::TESForm* GetTESForm(const std::string& pluginName, const std::uint32_t rawFormId)
 	{
 		const auto data_handler = RE::TESDataHandler::GetSingleton();
 		return data_handler ? data_handler->LookupForm(rawFormId, pluginName) : nullptr;
 	}
 
-	inline RE::BGSListForm* FindFormList(const std::string& aStr)
+	/**
+	 * \brief Returns a poniter to FormList based on string.
+	 * \param string        - String in the format RecordID~ModName or EditorID.
+	 * The mod name must have extension. ~ and ModName can be omitted for base game plugins. RecordID can have a maximum of 8 characters.
+	 * \return              - FormList pointer or nullptr if not found.
+	 */
+	inline RE::BGSListForm* FindFormList(const std::string& string)
 	{
-		if(aStr.find("~"sv) != std::string::npos)
+		if(string.find("~"sv) != std::string::npos)
 		{
-			auto split_id = string::split(aStr, "~");
+			auto split_id = string::split(string, "~");
 			auto [plugin, form_id_str] = std::make_pair(split_id.at(1), split_id.at(0));
 			if(form_id_str.size() == 10)
 				form_id_str.erase(2, 2);
@@ -32,18 +50,24 @@ namespace flm
 				return nullptr;
 			}
 		}
-		else if(aStr.find("0x"sv) != std::string::npos)
-			if(const auto f = RE::TESForm::LookupByID<RE::BGSListForm>(string::lexical_cast<RE::FormID>(aStr, true)))
+		else if(string.find("0x"sv) != std::string::npos)
+			if(const auto f = RE::TESForm::LookupByID<RE::BGSListForm>(string::lexical_cast<RE::FormID>(string, true)))
 				return f;
 
-		return RE::TESForm::LookupByEditorID<RE::BGSListForm>(aStr);
+		return RE::TESForm::LookupByEditorID<RE::BGSListForm>(string);
 	}
 
-	inline RE::TESForm* FindForm(const std::string& aStr)
+	/**
+	 * \brief Returns a poniter to Form based on string.
+	 * \param string        - String in the format RecordID~ModName or EditorID.
+	 * The mod name must have extension. ~ and ModName can be omitted for base game plugins. RecordID can have a maximum of 8 characters.
+	 * \return              - FormList pointer or nullptr if not found.
+	 */
+	inline RE::TESForm* FindForm(const std::string& string)
 	{
-		if(aStr.find("~"sv) != std::string::npos)
+		if(string.find("~"sv) != std::string::npos)
 		{
-			auto split_id = string::split(aStr, "~");
+			auto split_id = string::split(string, "~");
 			auto [plugin, form_id_str] = std::make_pair(split_id.at(1), split_id.at(0));
 			if(form_id_str.size() == 10)
 				form_id_str.erase(2, 2);
@@ -57,17 +81,21 @@ namespace flm
 				return nullptr;
 			}
 		}
-		else if(aStr.find("0x"sv) != std::string::npos)
-			if(const auto f = RE::TESForm::LookupByID(string::lexical_cast<RE::FormID>(aStr, true)))
+		else if(string.find("0x"sv) != std::string::npos)
+			if(const auto f = RE::TESForm::LookupByID(string::lexical_cast<RE::FormID>(string, true)))
 				return f;
 
-		return RE::TESForm::LookupByEditorID(aStr);
+		return RE::TESForm::LookupByEditorID(string);
 	}
 
-	// From https://github.com/powerof3/Spell-Perk-Item-Distributor
+	/**
+	 * \brief Removes spaces between | and leading zeros from string. From https://github.com/powerof3/Spell-Perk-Item-Distributor.
+	 * \param string        - String to parse.
+	 * \return              - Sanitized string.
+	 */
 	inline std::string Sanitize(const std::string& string)
 	{
-		auto sanitized = string;
+		std::string sanitized = string;
 
 		// strip spaces between " | "
 		static const boost::regex re_bar(R"(\s*\|\s*)", boost::regex_constants::optimize);
