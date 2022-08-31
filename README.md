@@ -7,7 +7,7 @@ With this mod, you can get rid of conflicts between mods that modify FormLists, 
 
 Configuration files can have any name, but they must be INI files whose name ends with _FLM. Example: Toys_FLM.ini.
 Or they can be any INI files located in the "FLM" directory.
-Configuration files are processed in alphabetical order. First form the Data directory, then form the Data\FLM.
+Configuration files are processed in alphabetical order. First from the Data directory, then from the Data\FLM.
 
 ##  General usage
 
