@@ -72,8 +72,14 @@ Plant = ChaurusEggs|PlantableAnimalsChaurusNest
 ## Validation for configuration files:
 Take a look at the log: "[PATH to MY Documents]\My Games\Skyrim Special Edition\SKSE\FormListManipulator.log". It contains all the information about the processed files and records.
 
-## Compability
-Created with CommonLibSSE-NG, support SE, AE, VR, but only SE was tested.
+## Compatibility
+Created with [CommonLibSSE-NG](https://github.com/CharmedBaryon/CommonLibSSE-NG), support SE, AE, VR, but only SE was tested.
+
+## Benefits
+* easy of use - config files instead of plugins,
+* no need to create compatibility patches for mods modifying the same list,
+* instant effect and better performance (DLL instead of scripts),
+* dynamic modification - you can close the game, change the contents of the INI file, and when you run game again, everything will be changed according to the contents of the file.
 
 ## License
 [MIT](LICENSE)
