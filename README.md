@@ -7,7 +7,7 @@ With this mod, you can get rid of conflicts between mods that modify FormLists, 
 
 Configuration files can have any name, but they must be INI files whose name ends with _FLM. Example: Toys_FLM.ini.
 Or they can be any INI files located in the "FLM" directory.
-Configuration files are processed in alphabetical order. First from the Data directory, then from the Data\FLM.
+Configuration files are processed in alphabetical order. First form the Data directory, then form the Data\FLM.
 
 ##  General usage
 
@@ -21,7 +21,7 @@ where,
 * EditorID - form editorID.
 
 Keys: FormList, Plant, BToys, GToys are not case-sensitive.
-FList  is skipped if is not found. From is skipped if it already exists in FormList or is not found.
+FList  is skipped if is not found. Form is skipped if it already exists in FormList or is not found.
 
 ##  Aliases
 
@@ -31,9 +31,9 @@ Aliases are collections of FromLists. To use an Alias add the # sign before its 
 
 ##  Groups
 
-```Group = NameForGroup|From, From, etc```
+```Group = NameForGroup|Form, Form, etc```
 
-Groups are collections of Froms. To use a Group add the # sign before its name. Groups are processed at the beginning of the configuration file, regardless of their position in the file. For FormList , BToy, GToy keywords.
+Groups are collections of Forms. To use a Group add the # sign before its name. Groups are processed at the beginning of the configuration file, regardless of their position in the file. For FormList , BToy, GToy keywords.
 
 ## Simplified usage for Plants:
 
@@ -42,7 +42,7 @@ Groups are collections of Froms. To use a Group add the # sign before its name. 
 where,
 * first form is for Ingredient/Alchemy Item/Activator,
 * second for Flora/Tree/Misc/Activator/Container.
-* If you specify a different type of From, a warning will be thrown into the log, but the Form will be added.
+* If you specify a different type of Form, a warning will be thrown into the log, but the Form will be added.
 
 ## Simplified usage for Boy's Toys:
 
