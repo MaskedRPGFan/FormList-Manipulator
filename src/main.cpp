@@ -43,6 +43,22 @@ namespace
 			flm::manipulator.AddToFormLists();
 			flm::manipulator.Summary();
 		}
+		// The user has started a new game by selecting New Game at the main menu.
+		else if(event->type == SKSE::MessagingInterface::kNewGame)
+		{
+			flm::manipulator.reload = true;
+			flm::manipulator.AddPlants();
+			flm::manipulator.AddToys();
+			flm::manipulator.AddToFormLists();
+		}
+		// The user has loaded a saved game.
+		else if(event->type == SKSE::MessagingInterface::kPostLoadGame)
+		{
+			flm::manipulator.reload = true;
+			flm::manipulator.AddPlants();
+			flm::manipulator.AddToys();
+			flm::manipulator.AddToFormLists();
+		}
 	}
 
 	/**

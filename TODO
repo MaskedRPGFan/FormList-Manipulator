@@ -1,0 +1,8 @@
+✔ Documentation. @done(22-08-30 23:34)
+☐ Unit tests.
+☐ TRY.
+☐ Dynamically writing and reading the state of configuration files in SKSE cosave, which will allow FormList to change dynamically (due to the 1.2.1 update).
+☐ Simplified use for hair colors.
+☐ Filters.
+☐ Handling of events sent by other mods.
+☐ Different structure for printing out information (due to update 1.2.1).

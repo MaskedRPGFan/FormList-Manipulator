@@ -46,6 +46,8 @@ namespace flm
 			 */
 			void Summary();
 
+			bool reload = false;
+
 		private:
 			std::vector<std::string_view> keywords_ = { "formlist"sv, "plant"sv, "btoys"sv, "gtoys"sv, "alias"sv, "group"sv }; /** Keywords for usage in the configuration files. */
 
@@ -77,7 +79,7 @@ namespace flm
 			int boy_toys_duplicates_ = 0;      /** Total amount of boy's toys duplicates. */
 			int girl_toys_added_ = 0;          /** Total amount of added girl's toys. */
 			int girl_toys_duplicates_ = 0;     /** Total amount of girl's toys duplicates. */
-			int total_found_forms_ = 0;        /** Total amount of found Forms. */
+			int total_found_forms_ = 0;        /** Total amount of found Forms during configs parse. */
 			int total_missing_forms_ = 0;      /** Total amount of missing Forms. */
 			int total_aliases_ = 0;            /** Total amount of found Aliases. */
 			int aliases_duplicates_ = 0;       /** Total amount of Aliases duplicates. */
@@ -127,7 +129,7 @@ namespace flm
 			 * \param form                      - Form to add.
 			 * \return                          - True, if everything went fine.
 			 */
-			static bool addFormToFormList(RE::BGSListForm*& list, RE::TESForm* form);
+			bool addFormToFormList(RE::BGSListForm*& list, RE::TESForm* form);
 	};
 
 	inline bool Manipulator::DebugMode() const
@@ -308,19 +310,22 @@ namespace flm
 
 	inline void Manipulator::AddPlants()
 	{
-		logger::info("{:-^47}", "PLANTS");
+		if(!reload)
+			logger::info("{:-^47}", "PLANTS");
 		for(auto& [seed, plant] : plants_)
 		{
 			if(seeds_list_->HasForm(seed))
 			{
-				logger::warn("    Seed \"{}\" [{:X}] already on the list!", seed->GetName(), seed->formID);
+				if(!reload)
+					logger::warn("    Seed \"{}\" [{:X}] already on the list!", seed->GetName(), seed->formID);
 				plants_duplicates_++;
 				continue;
 			}
 
 			if(plants_list_->HasForm(plant))
 			{
-				logger::warn("    Plant \"{}\" [{:X}] already on the list!", plant->GetName(), plant->formID);
+				if(!reload)
+					logger::warn("    Plant \"{}\" [{:X}] already on the list!", plant->GetName(), plant->formID);
 				plants_duplicates_++;
 				continue;
 			}
@@ -331,19 +336,23 @@ namespace flm
 			if(debug_mode_)
 				logger::info("Seed: \"{}\" [{:X}] and Plant: \"{}\" [{:X}] added!", seed->GetName(), seed->formID, plant->GetName(), plant->formID);
 		}
-
-		logger::info("Total {} new plants added, skipped {} duplicates.", plants_added_, plants_duplicates_);
-		logger::info("{:-^47}", "");
+		if(!reload)
+		{
+			logger::info("Total {} new plants added, skipped {} duplicates.", plants_added_, plants_duplicates_);
+			logger::info("{:-^47}", "");
+		}
 	}
 
 	inline void Manipulator::AddToys()
 	{
-		logger::info("{:-^47}", "BOY'S TOYS");
+		if(!reload)
+			logger::info("{:-^47}", "BOY'S TOYS");
 		for(auto& toy : boy_toys_)
 		{
 			if(boy_toys_list_->HasForm(toy))
 			{
-				logger::warn("    Toy \"{}\" [{:X}] already on the list of a boy's toys!", toy->GetName(), toy->formID);
+				if(!reload)
+					logger::warn("    Toy \"{}\" [{:X}] already on the list of a boy's toys!", toy->GetName(), toy->formID);
 				boy_toys_duplicates_++;
 				continue;
 			}
@@ -354,15 +363,20 @@ namespace flm
 				logger::info("    Toy \"{}\" [{:X}] added to the list of a boy's toys!", toy->GetName(), toy->formID);
 		}
 
-		logger::info("Total {} new toys added, skipped {} duplicates.", boy_toys_added_, boy_toys_duplicates_);
-		logger::info("{:-^47}", "");
+		if(!reload)
+		{
+			logger::info("Total {} new toys added, skipped {} duplicates.", boy_toys_added_, boy_toys_duplicates_);
+			logger::info("{:-^47}", "");
 
-		logger::info("{:-^47}", "GIRL'S TOYS");
+			logger::info("{:-^47}", "GIRL'S TOYS");
+		}
+
 		for(auto& toy : girl_toys_)
 		{
 			if(girl_toys_list_->HasForm(toy))
 			{
-				logger::warn("Toy \"{}\" [{:X}] already on the list of a girl's toys!", toy->GetName(), toy->formID);
+				if(!reload)
+					logger::warn("Toy \"{}\" [{:X}] already on the list of a girl's toys!", toy->GetName(), toy->formID);
 				girl_toys_duplicates_++;
 				continue;
 			}
@@ -373,13 +387,18 @@ namespace flm
 				logger::info("Toy \"{}\" [{:X}] added to the list of a girl's toys!", toy->GetName(), toy->formID);
 		}
 
-		logger::info("Total {} new toys added, skipped {} duplicates.", girl_toys_added_, girl_toys_duplicates_);
-		logger::info("{:-^47}", "");
+		if(!reload)
+		{
+			logger::info("Total {} new toys added, skipped {} duplicates.", girl_toys_added_, girl_toys_duplicates_);
+			logger::info("{:-^47}", "");
+		}
 	}
 
 	inline void Manipulator::AddToFormLists()
 	{
-		logger::info("{:-^47}", "FORMLISTS");
+		if(!reload)
+			logger::info("{:-^47}", "FORMLISTS");
+
 		for(auto& [form_list, forms] : form_lists_)
 		{
 			int duplicates = 0;
@@ -390,7 +409,8 @@ namespace flm
 			{
 				if(fl->HasForm(f))
 				{
-					logger::warn("        Form \"{}\" [{:X}] already on the list!", f->GetName(), f->formID);
+					if(!reload)
+						logger::warn("        Form \"{}\" [{:X}] already on the list!", f->GetName(), f->formID);
 					duplicates++;
 					continue;
 				}
@@ -408,8 +428,11 @@ namespace flm
 			fl_total_duplicates_ += duplicates;
 		}
 
-		logger::info("Total {} new Forms added to {} FormLists, skipped {} duplicates.", fl_total_added_, form_lists_.size(), fl_total_duplicates_);
-		logger::info("{:-^47}", "");
+		if(!reload)
+		{
+			logger::info("Total {} new Forms added to {} FormLists, skipped {} duplicates.", fl_total_added_, form_lists_.size(), fl_total_duplicates_);
+			logger::info("{:-^47}", "");
+		}
 	}
 
 	inline void Manipulator::Summary()
@@ -737,7 +760,8 @@ namespace flm
 	{
 		if(list->HasForm(form))
 		{
-			logger::warn("Form \"{}\" [{:X}] already on the list!", form->GetName(), form->formID);
+			if(!reload)
+				logger::warn("Form \"{}\" [{:X}] already on the list!", form->GetName(), form->formID);
 			return false;
 		}
 
