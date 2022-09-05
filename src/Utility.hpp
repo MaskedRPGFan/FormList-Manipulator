@@ -109,6 +109,14 @@ namespace flm
 		static const boost::regex re_zeros(R"((0x00+)([0-9a-fA-F]+))", boost::regex_constants::optimize);
 		sanitized = regex_replace(sanitized, re_zeros, "0x$2");
 
+		// swap dawnguard and dragonborn forms
+		// VR apparently does not load masters in order so the lookup fails
+		static const boost::regex re_dawnguard(R"((0x0*2)([0-9a-f]{6}))", static_cast<int>(boost::regex_constants::optimize) | static_cast<int>(boost::regex::icase));
+		sanitized = regex_replace(sanitized, re_dawnguard, "0x$2~Dawnguard.esm");
+
+		static const boost::regex re_dragonborn(R"((0x0*4)([0-9a-f]{6}))", static_cast<int>(boost::regex_constants::optimize) | static_cast<int>(boost::regex::icase));
+		sanitized = regex_replace(sanitized, re_dragonborn, "0x$2~Dragonborn.esm");
+
 		return sanitized;
 	}
 }
