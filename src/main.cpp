@@ -3,6 +3,7 @@
 #include <xbyak/xbyak.h>
 
 #include "RegisterFuncs.hpp"
+#include "MergeMapperPluginAPI.h"
 
 namespace
 {
@@ -33,6 +34,15 @@ namespace
 	 */
 	void OnEvent(SKSE::MessagingInterface::Message* event)
 	{
+		if (event->type == SKSE::MessagingInterface::kPostPostLoad) {
+			MergeMapperPluginAPI::GetMergeMapperInterface001();
+			if (g_mergeMapperInterface) {
+				const auto version = g_mergeMapperInterface->GetBuildNumber();
+				logger::info("Got MergeMapper interface buildnumber {}", version);
+			}
+			else
+				logger::info("MergeMapper not detected");
+		}
 		// After all the ESM/ESL/ESP plugins are loaded.
 		if(event->type == SKSE::MessagingInterface::kDataLoaded)
 		{
