@@ -25,7 +25,8 @@ namespace
 		log->flush_on(level);
 
 		spdlog::set_default_logger(std::move(log));
-		spdlog::set_pattern("[%=17!s::%=17!!:%3#]: [%^%=7l%$] %v"s);
+		// spdlog::set_pattern("[%=17!s::%=17!!:%3#]: [%^%=7l%$] %v"s);
+		spdlog::set_pattern("[%Y-%m-%d %H-%M-%S.%e] [%^%=7l%$] %v"s);
 	}
 
 	/**
@@ -46,28 +47,21 @@ namespace
 		// After all the ESM/ESL/ESP plugins are loaded.
 		if(event->type == SKSE::MessagingInterface::kDataLoaded)
 		{
-			flm::manipulator.FindLists();
-			flm::manipulator.FindConfigs();
-			flm::manipulator.AddPlants();
-			flm::manipulator.AddToys();
-			flm::manipulator.AddToFormLists();
+			flm::manipulator.FindAll();
+			flm::manipulator.AddAll();
 			flm::manipulator.Summary();
 		}
 		// The user has started a new game by selecting New Game at the main menu.
 		else if(event->type == SKSE::MessagingInterface::kNewGame)
 		{
-			flm::manipulator.reload = true;
-			flm::manipulator.AddPlants();
-			flm::manipulator.AddToys();
-			flm::manipulator.AddToFormLists();
+			flm::manipulator.SetNewGameMode();
+			flm::manipulator.AddAll();
 		}
 		// The user has loaded a saved game.
 		else if(event->type == SKSE::MessagingInterface::kPostLoadGame)
 		{
-			flm::manipulator.reload = true;
-			flm::manipulator.AddPlants();
-			flm::manipulator.AddToys();
-			flm::manipulator.AddToFormLists();
+			flm::manipulator.SetLoadGameMode();
+			flm::manipulator.AddAll();
 		}
 	}
 
@@ -134,6 +128,7 @@ extern "C" [[maybe_unused]] DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::L
 	SKSE::Init(skse);
 	SKSE::GetMessagingInterface()->RegisterListener(OnEvent);
 	SKSE::GetPapyrusInterface()->Register(papyrus::RegisterFunctions);
+	SKSE::GetModCallbackEventSource()->AddEventSink(&flm::manipulator.GetEventManager());
 
 	return true;
 }

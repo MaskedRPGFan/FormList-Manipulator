@@ -1,6 +1,9 @@
 #pragma once
 
-#include "Utility.hpp"
+#include "EventManager.hpp"
+#include "FormListType.hpp"
+#include "InfoType.hpp"
+#include "Keywords.hpp"
 
 namespace flm
 {
@@ -10,6 +13,7 @@ namespace flm
 	class Manipulator
 	{
 		public:
+			Manipulator();
 			/**
 			 * \brief Returns debug mode state.
 			 * \return              - Debug mode state.
@@ -20,117 +24,173 @@ namespace flm
 			 * \param mode          - New debug mode state.
 			 */
 			void SetDebugMode(bool mode);
-
 			/**
-			 * \brief Finds all FormLists whose use is simplified.
+			 * \brief Finds FormLists whose use is simplified and config files.
 			 */
-			void FindLists();
+			void FindAll();
 			/**
-			 * \brief Finds all config files.
+			 * \brief Adds all Forms from config files.
 			 */
-			void FindConfigs();
-			/**
-			 * \brief Reads plants from configuration files and adds the correct ones to internal structures.
-			 */
-			void AddPlants();
-			/**
-			 * \brief Reads toys from configuration files and adds the correct ones to internal structures.
-			 */
-			void AddToys();
-			/**
-			 * \brief Reads general forms from configuration files and adds the correct ones to internal structures.
-			 */
-			void AddToFormLists();
+			void AddAll();
 			/**
 			 * \brief Generates summary for config files.
 			 */
 			void Summary();
 
-			bool reload = false;
-
-		private:
-			std::vector<std::string_view> keywords_ = { "formlist"sv, "plant"sv, "btoys"sv, "gtoys"sv, "alias"sv, "group"sv }; /** Keywords for usage in the configuration files. */
-
-			bool debug_mode_ = false;                   /** Mode for more detailed information. */
-			RE::BGSListForm* seeds_list_ = nullptr;     /** Forms with seeds to plant. */
-			RE::BGSListForm* plants_list_ = nullptr;    /** Forms with plants to grow. */
-			RE::BGSListForm* boy_toys_list_ = nullptr;  /** Forms with boy's toys. */
-			RE::BGSListForm* girl_toys_list_ = nullptr; /** Forms with girl's toys. */
-
-			std::map<std::string, std::vector<RE::BGSListForm*>> aliases_;     /** All valid Aliases. */
-			std::map<std::string, std::vector<RE::TESForm*>> groups_;          /** All valid Groups. */
-			std::map<RE::BGSListForm*, std::vector<RE::TESForm*>> form_lists_; /** All valid Forms for FormLists. */
-			std::vector<std::pair<RE::TESForm*, RE::TESForm*>> plants_;        /** All valid Forms with seeds and plants. */
-			std::vector<RE::TESForm*> boy_toys_;                               /** All valid Forms with boy's toys. */
-			std::vector<RE::TESForm*> girl_toys_;                              /** All valid Forms with girl's toys. */
-
-			int total_valid_entries_ = 0;      /** How many valid entries is. */
-			int total_invalid_entries_ = 0;    /** How many invalid entries is. */
-			int valid_configs_ = 0;            /** How many valid configs is. */
-			int invalid_configs_ = 0;          /** How many invalid configs is. */
-			int non_existent_aliases_ = 0;     /** How many valid aliases is. */
-			int non_existent_groups_ = 0;      /** How many in valid aliases is. */
-			int total_missing_form_lists_ = 0; /** How many missing FormLists is. */
-			int fl_total_duplicates_ = 0;      /** Total amount of FromLists duplicates. */
-			int fl_total_added_ = 0;           /** Total amount of added FormLists. */
-			int plants_duplicates_ = 0;        /** Total amount of Plants duplicates. */
-			int plants_added_ = 0;             /** Total amount of added Plants. */
-			int boy_toys_added_ = 0;           /** Total amount of added boy's toys. */
-			int boy_toys_duplicates_ = 0;      /** Total amount of boy's toys duplicates. */
-			int girl_toys_added_ = 0;          /** Total amount of added girl's toys. */
-			int girl_toys_duplicates_ = 0;     /** Total amount of girl's toys duplicates. */
-			int total_found_forms_ = 0;        /** Total amount of found Forms during configs parse. */
-			int total_missing_forms_ = 0;      /** Total amount of missing Forms. */
-			int total_aliases_ = 0;            /** Total amount of found Aliases. */
-			int aliases_duplicates_ = 0;       /** Total amount of Aliases duplicates. */
-			int total_groups_ = 0;             /** Total amount of found Groups. */
-			int groups_duplicates_ = 0;        /** Total amount of Groups duplicates. */
+			/**
+			 * \brief Sets current operating mode to NewGame.
+			 */
+			void SetNewGameMode();
+			/**
+			 * \brief Sets current operating mode to LoadGame.
+			 */
+			void SetLoadGameMode();
 
 			/**
-			 * \brief Finds FormList based on FormEditorID.
-			 * \param fei                       - FormEditorID of the FormList.
-			 * \param formList                  - A pointer to the FormList to be filled in.
+			 * \brief Returns manager for Mod Events.
+			 * \return Manager for Mod Events.
 			 */
-			void findList(const std::string_view& fei, RE::BGSListForm*& formList) const;
+			EventManager& GetEventManager();
+
+		private:
+			bool debug_mode_ = false;              /* Mode for more detailed information. */
+			OperatingMode::OperatingMode mode_;    /* Current operating mode for FLM. */
+			std::array<int, InfoType::ALL> infos_; /* Store values for types of countable statistics.*/
+			std::vector<RE::BGSListForm*> lists_;  /* FormLists from Skyrim for use in simplified entries. */
+			EventManager event_manager_;           /* Manages sending and receiving mod events. */
+
+			const std::array<ParseEntryCallback, EntryType::ALL> add_callbacks_{
+				std::bind(&Manipulator::parseAlias, this, std::placeholders::_1),         /* Aliases for FormLists. */
+				std::bind(&Manipulator::parseGroup, this, std::placeholders::_1),         /* Groups for Forms. */
+				std::bind(&Manipulator::parseModEvent, this, std::placeholders::_1),      /* Mod events. */
+				std::bind(&Manipulator::parseFormList, this, std::placeholders::_1),      /* FromList. */
+				std::bind(&Manipulator::parsePlant, this, std::placeholders::_1),         /* Plant. */
+				std::bind(&Manipulator::parseBToys, this, std::placeholders::_1),         /* Boy's toys. */
+				std::bind(&Manipulator::parseGToys, this, std::placeholders::_1),         /* Girl's toys. */
+				std::bind(&Manipulator::parseHairColors, this, std::placeholders::_1),    /* Hair colors. */
+				std::bind(&Manipulator::parseAtronachForge, this, std::placeholders::_1), /* Atronach forge. */
+			};                                                                            /* Functions used to parse entries. */
+
+			std::map<std::string, std::vector<RE::BGSListForm*>> aliases_;      /* All valid Aliases. */
+			std::map<std::string, std::vector<RE::TESForm*>> groups_;           /* All valid Groups. */
+			FormListsData form_lists_;                                          /* All valid Forms for FormLists. */
+			std::vector<std::pair<RE::TESForm*, RE::TESForm*>> plants_;         /* All valid Forms with seeds and plants. */
+			std::vector<RE::TESForm*> boy_toys_;                                /* All valid Forms with boy's toys. */
+			std::vector<RE::TESForm*> girl_toys_;                               /* All valid Forms with girl's toys. */
+			std::vector<RE::TESForm*> hair_colors_;                             /* All valid Forms with hair colors. */
+			std::vector<std::pair<RE::TESForm*, RE::TESForm*>> atronach_forge_; /* All valid Forms with recipes and results for Atronach Forge. */
+
+			/**
+			 * \brief Finds all FormLists whose use is simplified.
+			 */
+			void findLists();
+
+			/**
+			 * \brief Finds all config files. Finds all configuration files. Reads data from configuration files and adds the correct entries to internal structures.
+			 */
+			void findConfigs();
+			/**
+			 * \brief Perform parsing of the entry if the key is in the type.
+			 * \param key                   - Key to check.
+			 * \param entry                 - Entry to parse.
+			 * \param type                  - Entry type.
+			 * \param valid                 - A variable that stores the number of valid entries.
+			 * \param invalid               - A variable that stores the number of invalid entries.
+			 * \return                      - True if the key is valid.
+			 */
+			bool addIfKeyIs(const std::string& key, const std::string& entry, const EntryType::EntryType type, int& valid, int& invalid);
+			/**
+			 * \brief Adds the correct plants to the game.
+			 */
+			void addPlants();
+			/**
+			 * \brief Adds the correct kids toys to the game.
+			 */
+			void addKidsToys();
+			/**
+			 * \brief Adds the correct hair colors to the game.
+			 */
+			void addHairColors();
+			/**
+			 * \brief Adds the correct pairs of recipes and results to the game.
+			 */
+			void addAtronachForgeRecipes();
 			/**
 			 * \brief Adds Form and FromList to internal structure based on string entry. String is validated.
 			 * \param entry                     - String in the format FList|Form, Form, #Group, etc.
 			 * \return                          - True, if everything went fine.
 			 */
-			bool addFormList(const std::string& entry);
+			bool parseFormList(const std::string& entry);
 			/**
 			 * \brief Adds Seed end Plant to internal structure based on string entry. String is validated.
 			 * \param entry                     - String in the format Seed|Plant
 			 * \return                          - True, if everything went fine.
 			 */
-			bool addPlant(const std::string& entry);
+			bool parsePlant(const std::string& entry);
 			/**
-			 * \brief Adds Toys to internal structure based on string entry. String is validated. If parameter Boy is set to false, toys are for girls.
+			 * \brief Adds Boy's Toys to internal structure based on string entry. String is validated.
 			 * \param entry                     - String in the format Form, Form, #Group, etc.
-			 * \param boy                       - If true toys are for boys, if false for girls.
 			 * \return                          - True, if everything went fine.
 			 */
-			bool addToys(const std::string& entry, bool boy = true);
+			bool parseBToys(const std::string& entry);
+
+			/**
+			 * \brief Adds Girl's Toys to internal structure based on string entry. String is validated.
+			 * \param entry                     - String in the format Form, Form, #Group, etc.
+			 * \return                          - True, if everything went fine.
+			 */
+			bool parseGToys(const std::string& entry);
 			/**
 			 * \brief Adds Alias to internal structure based on string entry. String is validated.
 			 * \param entry                     - String in the format NameForAlias|FList, FList, etc.
 			 * \return                          - True, if everything went fine.
 			 */
-			bool addAlias(const std::string& entry);
+			bool parseAlias(const std::string& entry);
 			/**
 			 * \brief Adds Group to internal structure based on string entry. String is validated.
 			 * \param entry                     - String in the format NameForGroup|From, From, etc.
 			 * \return                          - True, if everything went fine.
 			 */
-			bool addGroup(const std::string& entry);
+			bool parseGroup(const std::string& entry);
+			/**
+			 * \brief Adds ModEvent to internal structure based on string entry. String is validated.
+			 * \param entry                     - String in the format FList|Form, Form, #Group, etc.
+			 * \return                          - True, if everything went fine.
+			 */
+			bool parseModEvent(const std::string& entry);
+			/**
+			 * \brief Adds Hair Colors to internal structure based on string entry. String is validated.
+			 * \param entry                     - String in the format Form, Form, #Group, etc.
+			 * \return                          - True, if everything went fine.
+			 */
+			bool parseHairColors(const std::string& entry);
+			/**
+			 * \brief Adds recipe and result to internal structure based on string entry. String is validated.
+			 * \param entry                     - String in the format Recipe|Result.
+			 * \return                          - True, if everything went fine.
+			 */
+			bool parseAtronachForge(const std::string& entry);
+			/**
+			 * \brief Parse form entry.
+			 * \param entry                 - Entry to parse.
+			 * \param forms                 - Forms vector, where the found forms will be added.
+			 * \return                      - 0 if the entry is valid, -1 if the form is missing, -2 if the group is missing.
+			 */
+			int parseFormEntry(std::string& entry, std::vector<RE::TESForm*>& forms);
 			/**
 			 * \brief Adds From to FormList. Duplicates are omitted.
 			 * \param list                      - FromList where Form will be added.
 			 * \param form                      - Form to add.
 			 * \return                          - True, if everything went fine.
 			 */
-			bool addFormToFormList(RE::BGSListForm*& list, RE::TESForm* form);
+			bool addFormToFormList(RE::BGSListForm*& list, RE::TESForm* form) const;
 	};
+
+	inline Manipulator::Manipulator()
+		: mode_(OperatingMode::INITIALIZE)
+	{
+		infos_.fill(0);
+	}
 
 	inline bool Manipulator::DebugMode() const
 	{
@@ -142,24 +202,39 @@ namespace flm
 		debug_mode_ = mode;
 	}
 
-	inline void Manipulator::FindLists()
+	inline void Manipulator::FindAll()
 	{
-		findList("flPlanterPlantableItem"sv, seeds_list_);
-		findList("flPlanterPlantedFlora"sv, plants_list_);
-		findList("BYOHRelationshipAdoptionPlayerGiftChildMale"sv, boy_toys_list_);
-		findList("BYOHRelationshipAdoptionPlayerGiftChildFemale"sv, girl_toys_list_);
+		findLists();
+		findConfigs();
 	}
 
-	inline void Manipulator::FindConfigs()
+	inline void Manipulator::AddAll()
+	{
+		addPlants();
+		addKidsToys();
+		addHairColors();
+		addAtronachForgeRecipes();
+		auto [added, duplicates] = AddGeneric(form_lists_, mode_, debug_mode_);
+		infos_[InfoType::FORMS_ADD] += added;
+		infos_[InfoType::FORMS_DUP] += duplicates;
+	}
+
+	inline void Manipulator::findLists()
+	{
+		for(int type = 0; type != FormListType::ALL; type++)
+			lists_.emplace_back(FindForm<RE::BGSListForm>(FormListType::editor_id[type]));
+	}
+
+	inline void Manipulator::findConfigs()
 	{
 		const std::filesystem::directory_entry debug_mode_toggle(R"(Data\FormListManipulator_DEBUG.ini)");
 		if(debug_mode_toggle.exists())
 		{
-			logger::info("{:-^47}", "DEBUG MODE ENABLED");
+			log::Header("DEBUG MODE ENABLED"sv);
 			SetDebugMode(true);
 		}
 
-		logger::info("{:-^47}", "Looking for configs");
+		log::Header("Looking for configs"sv);
 		std::vector<std::string> files;
 		auto constexpr folder = R"(Data\)";
 		for(const auto& entry : std::filesystem::directory_iterator(folder))
@@ -175,11 +250,13 @@ namespace flm
 
 		if(files.empty())
 		{
-			logger::warn("Configs not found!");
+			log::Warn("Configs not found!");
 			return;
 		}
 		else
-			logger::info("Found {} configs.", files.size());
+			log::Info("Found {} configs.", files.size());
+
+		log::level++;
 
 		for(auto& path : files)
 		{
@@ -189,297 +266,317 @@ namespace flm
 
 			if(const auto rc = ini.LoadFile(path.c_str()); rc < 0)
 			{
-				logger::error("Can't read ini {}.", path);
-				invalid_configs_++;
+				log::Error("Can't read ini {}.", path);
+				infos_[InfoType::CONFIGS_IN]++;
 				continue;
 			}
 
-			valid_configs_++;
+			infos_[InfoType::CONFIGS_V]++;
 
-			logger::info("    Processing {}...", path);
+			log::Info("Processing {}...", path);
+			log::level++;
 
 			if(auto values = ini.GetSection(""); values)
 			{
-				// How many valid entries is.
-				int valid_entries = 0;
-				// How many invalid entries is.
-				int invalid_entries = 0;
+				int valid_entries = 0;   /* How many valid entries is. */
+				int invalid_entries = 0; /* How many invalid entries is. */
 
 				// Parse Aliases and Groups first.
 				for(auto& [key, entry] : *values)
 				{
-					auto sanitized_str = Sanitize(entry);
-					std::string sanitized_key = key.pItem;
-					std::ranges::transform(sanitized_key, sanitized_key.begin(), [](unsigned char c)
-										   { return std::tolower(c); });
+					std::string sanitized_entry = Sanitize(entry);
+					std::string lowercase_key = key.pItem;
+					ToLower(lowercase_key);
 
-					if(sanitized_key == keywords_.at(4))
-					{
-						if(!addAlias(sanitized_str))
-						{
-							logger::error("        Unable to parse: {}.", sanitized_str);
-							invalid_entries++;
-						}
-						else
-							valid_entries++;
-					}
-					else if(sanitized_key == keywords_.at(5))
-					{
-						if(!addGroup(sanitized_str))
-						{
-							logger::error("        Unable to parse: {}.", sanitized_str);
-							invalid_entries++;
-						}
-						else
-							valid_entries++;
-					}
+					if(addIfKeyIs(lowercase_key, sanitized_entry, EntryType::ALIAS, valid_entries, invalid_entries))
+						continue;
+
+					if(addIfKeyIs(lowercase_key, sanitized_entry, EntryType::GROUP, valid_entries, invalid_entries))
+						continue;
 				}
 
 				for(auto& [key, entry] : *values)
 				{
-					auto sanitized_str = Sanitize(entry);
-					std::string sanitized_key = key.pItem;
-					std::ranges::transform(sanitized_key, sanitized_key.begin(), [](unsigned char c)
-										   { return std::tolower(c); });
+					std::string sanitized_entry = Sanitize(entry);
+					std::string lowercase_key = key.pItem;
+					ToLower(lowercase_key);
 
-					// Skip parsed Aliases and Groups.
-					if(sanitized_key == keywords_.at(4) || sanitized_key == keywords_.at(5))
-						continue;
-					else if(sanitized_key == keywords_.at(0))
+					if(std::ranges::find(keywords, lowercase_key) == keywords.end())
 					{
-						if(!addFormList(sanitized_str))
-						{
-							logger::error("        Unable to parse: {}.", sanitized_str);
-							invalid_entries++;
-						}
-						else
-							valid_entries++;
-					}
-					else if(sanitized_key == keywords_.at(1))
-					{
-						if(!addPlant(sanitized_str))
-						{
-							logger::error("        Unable to parse: {}.", sanitized_str);
-							invalid_entries++;
-						}
-						else
-							valid_entries++;
-					}
-					else if(sanitized_key == keywords_.at(2))
-					{
-						if(!addToys(sanitized_str))
-						{
-							logger::error("        Unable to parse: {}.", sanitized_str);
-							invalid_entries++;
-						}
-						else
-							valid_entries++;
-					}
-					else if(sanitized_key == keywords_.at(3))
-					{
-						if(!addToys(sanitized_str, false))
-						{
-							logger::error("        Unable to parse: {}.", sanitized_str);
-							invalid_entries++;
-						}
-						else
-							valid_entries++;
-					}
-					else
-					{
-						logger::error("        Unknown key {}!", key.pItem);
+						log::Error("Unknown key {}!", key.pItem);
 						invalid_entries++;
+						continue;
 					}
+
+					for(int type = 2; type != EntryType::ALL; type++)
+						if(addIfKeyIs(lowercase_key, sanitized_entry, static_cast<EntryType::EntryType>(type), valid_entries, invalid_entries))
+							break;
 				}
 
-				logger::info("        Finished, {} valid entries found, {} invalid.", valid_entries, invalid_entries);
-				total_valid_entries_ += valid_entries;
-				total_invalid_entries_ += invalid_entries;
+				log::Info("Finished, {} valid entries found, {} invalid.", valid_entries, invalid_entries);
+				infos_[InfoType::ENTRIES_V] += valid_entries;
+				infos_[InfoType::ENTRIES_IN] += invalid_entries;
 			}
 			else
-				logger::info("        Config file is empty.");
-		}
+				log::Info("Config file is empty.");
 
-		logger::info("Reading configs complete, {} valid configs found, {} invalid. {} valid entries found, {} invalid.",
-					 valid_configs_,
-					 invalid_configs_,
-					 total_valid_entries_,
-					 total_invalid_entries_);
-		logger::info("{:-^47}", "");
+			log::level--;
+		}
+		log::level--;
+		log::Info("Reading configs complete, {} valid configs found, {} invalid. {} valid entries found, {} invalid.",
+				  infos_[InfoType::CONFIGS_V],
+				  infos_[InfoType::CONFIGS_IN],
+				  infos_[InfoType::ENTRIES_V],
+				  infos_[InfoType::ENTRIES_IN]);
+		log::Header();
 	}
 
-	inline void Manipulator::AddPlants()
+	inline bool Manipulator::addIfKeyIs(const std::string& key, const std::string& entry, const EntryType::EntryType type, int& valid, int& invalid)
 	{
-		if(!reload)
-			logger::info("{:-^47}", "PLANTS");
+		if(key == keywords[type])
+		{
+			if(debug_mode_)
+			{
+				log::Info("Processing entry: {}.", entry);
+				log::level++;
+			}
+			if((add_callbacks_[type])(entry))
+			{
+				infos_[InfoType::ENTRIES_V]++;
+				if(debug_mode_)
+					log::level--;
+				valid++;
+				return true;
+			}
+			else
+			{
+				infos_[InfoType::ENTRIES_IN]++;
+				if(debug_mode_)
+					log::level--;
+				invalid++;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	inline void Manipulator::addPlants()
+	{
+		if(mode_ == OperatingMode::INITIALIZE)
+		{
+			log::Header("PLANTS"sv);
+			log::level++;
+		}
 		for(auto& [seed, plant] : plants_)
 		{
-			if(seeds_list_->HasForm(seed))
+			if(lists_[FormListType::SEED]->HasForm(seed))
 			{
-				if(!reload)
-					logger::warn("    Seed \"{}\" [{:X}] already on the list!", seed->GetName(), seed->formID);
-				plants_duplicates_++;
+				if(mode_ == OperatingMode::INITIALIZE)
+					log::DuplicateWarn("Seed"sv, seed);
+				infos_[InfoType::PLANTS_DUP]++;
 				continue;
 			}
 
-			if(plants_list_->HasForm(plant))
+			if(lists_[FormListType::PLANT]->HasForm(plant))
 			{
-				if(!reload)
-					logger::warn("    Plant \"{}\" [{:X}] already on the list!", plant->GetName(), plant->formID);
-				plants_duplicates_++;
+				if(mode_ == OperatingMode::INITIALIZE)
+					log::DuplicateWarn("Plant"sv, plant);
+				infos_[InfoType::PLANTS_DUP]++;
 				continue;
 			}
 
-			seeds_list_->AddForm(seed);
-			plants_list_->AddForm(plant);
-			plants_added_++;
+			lists_[FormListType::SEED]->AddForm(seed);
+			lists_[FormListType::PLANT]->AddForm(plant);
+			infos_[InfoType::PLANTS_ADD]++;
 			if(debug_mode_)
-				logger::info("Seed: \"{}\" [{:X}] and Plant: \"{}\" [{:X}] added!", seed->GetName(), seed->formID, plant->GetName(), plant->formID);
+				log::AddedPair("Seed", seed, "Plant", plant);
 		}
-		if(!reload)
+		if(mode_ == OperatingMode::INITIALIZE)
 		{
-			logger::info("Total {} new plants added, skipped {} duplicates.", plants_added_, plants_duplicates_);
-			logger::info("{:-^47}", "");
+			log::level--;
+			log::TotalAdded("Plants", infos_[InfoType::PLANTS_ADD], infos_[InfoType::PLANTS_DUP]);
+			log::Header();
 		}
 	}
 
-	inline void Manipulator::AddToys()
+	inline void Manipulator::addKidsToys()
 	{
-		if(!reload)
-			logger::info("{:-^47}", "BOY'S TOYS");
-		for(auto& toy : boy_toys_)
+		if(mode_ == OperatingMode::INITIALIZE)
 		{
-			if(boy_toys_list_->HasForm(toy))
+			log::Header("BOY'S TOYS"sv);
+			log::level++;
+		}
+		for(const auto& toy : boy_toys_)
+		{
+			if(lists_[FormListType::BTOYS]->HasForm(toy))
 			{
-				if(!reload)
-					logger::warn("    Toy \"{}\" [{:X}] already on the list of a boy's toys!", toy->GetName(), toy->formID);
-				boy_toys_duplicates_++;
+				if(mode_ == OperatingMode::INITIALIZE)
+					log::DuplicateWarn("Boy's Toy"sv, toy);
+				infos_[InfoType::BOY_TOYS_DUP]++;
 				continue;
 			}
 
-			boy_toys_list_->AddForm(toy);
-			boy_toys_added_++;
+			lists_[FormListType::BTOYS]->AddForm(toy);
+			infos_[InfoType::B_TOYS]++;
 			if(debug_mode_)
-				logger::info("    Toy \"{}\" [{:X}] added to the list of a boy's toys!", toy->GetName(), toy->formID);
+				log::Added("Boy's Toy", toy);
 		}
 
-		if(!reload)
+		if(mode_ == OperatingMode::INITIALIZE)
 		{
-			logger::info("Total {} new toys added, skipped {} duplicates.", boy_toys_added_, boy_toys_duplicates_);
-			logger::info("{:-^47}", "");
+			log::level--;
+			log::TotalAdded("Boy's Toys", infos_[InfoType::B_TOYS], infos_[InfoType::BOY_TOYS_DUP]);
+			log::Header();
 
-			logger::info("{:-^47}", "GIRL'S TOYS");
+			log::Header("GIRL'S TOYS"sv);
+			log::level++;
 		}
 
-		for(auto& toy : girl_toys_)
+		for(const auto& toy : girl_toys_)
 		{
-			if(girl_toys_list_->HasForm(toy))
+			if(lists_[FormListType::GTOYS]->HasForm(toy))
 			{
-				if(!reload)
-					logger::warn("Toy \"{}\" [{:X}] already on the list of a girl's toys!", toy->GetName(), toy->formID);
-				girl_toys_duplicates_++;
+				if(mode_ == OperatingMode::INITIALIZE)
+					log::DuplicateWarn("Girls's Toy"sv, toy);
+				infos_[InfoType::GIRL_TOYS_DUP]++;
 				continue;
 			}
 
-			girl_toys_list_->AddForm(toy);
-			girl_toys_added_++;
+			lists_[FormListType::GTOYS]->AddForm(toy);
+			infos_[InfoType::G_TOYS]++;
 			if(debug_mode_)
-				logger::info("Toy \"{}\" [{:X}] added to the list of a girl's toys!", toy->GetName(), toy->formID);
+				log::Added("Girl's Toy", toy);
 		}
 
-		if(!reload)
+		if(mode_ == OperatingMode::INITIALIZE)
 		{
-			logger::info("Total {} new toys added, skipped {} duplicates.", girl_toys_added_, girl_toys_duplicates_);
-			logger::info("{:-^47}", "");
+			log::level--;
+			log::TotalAdded("Girl's Toys", infos_[InfoType::G_TOYS], infos_[InfoType::GIRL_TOYS_DUP]);
+			log::Header();
 		}
 	}
 
-	inline void Manipulator::AddToFormLists()
+	inline void Manipulator::addHairColors()
 	{
-		if(!reload)
-			logger::info("{:-^47}", "FORMLISTS");
-
-		for(auto& [form_list, forms] : form_lists_)
+		if(mode_ == OperatingMode::INITIALIZE)
 		{
-			int duplicates = 0;
-			int added = 0;
-			RE::BGSListForm* fl = form_list;
-			logger::info("    FormList \"{}\" [{:X}]", fl->GetName(), fl->formID);
-			for(const auto& f : forms)
+			log::Header("HAIR COLORS"sv);
+			log::level++;
+		}
+		for(const auto& color : hair_colors_)
+		{
+			if(lists_[FormListType::HAIRC]->HasForm(color))
 			{
-				if(fl->HasForm(f))
-				{
-					if(!reload)
-						logger::warn("        Form \"{}\" [{:X}] already on the list!", f->GetName(), f->formID);
-					duplicates++;
-					continue;
-				}
-				else
-				{
-					fl->AddForm(f);
-					added++;
-					if(debug_mode_)
-						logger::info("        Form: \"{}\" [{:X}] added!", f->GetName(), f->formID);
-				}
+				if(mode_ == OperatingMode::INITIALIZE)
+					log::DuplicateWarn("Hair color"sv, color);
+				infos_[InfoType::HAIRC_DUP]++;
+				continue;
 			}
 
-			logger::info("        {} new Forms added, skipped {} duplicates.", added, duplicates);
-			fl_total_added_ += added;
-			fl_total_duplicates_ += duplicates;
+			lists_[FormListType::HAIRC]->AddForm(color);
+			infos_[InfoType::HAIRC]++;
+			if(debug_mode_)
+				log::Added("Hair color", color);
 		}
 
-		if(!reload)
+		if(mode_ == OperatingMode::INITIALIZE)
 		{
-			logger::info("Total {} new Forms added to {} FormLists, skipped {} duplicates.", fl_total_added_, form_lists_.size(), fl_total_duplicates_);
-			logger::info("{:-^47}", "");
+			log::level--;
+			log::TotalAdded("Hair colors", infos_[InfoType::HAIRC], infos_[InfoType::HAIRC_DUP]);
+			log::Header();
+		}
+	}
+
+	inline void Manipulator::addAtronachForgeRecipes()
+	{
+		if(mode_ == OperatingMode::INITIALIZE)
+		{
+			log::Header("ATRONACH FORGE"sv);
+			log::level++;
+		}
+
+		for(auto& [recipe, result] : atronach_forge_)
+		{
+			if(lists_[FormListType::AFREC]->HasForm(recipe))
+			{
+				if(mode_ == OperatingMode::INITIALIZE)
+					log::DuplicateWarn("Recipe"sv, recipe);
+				infos_[InfoType::AFORG_DUP]++;
+				continue;
+			}
+
+			if(lists_[FormListType::AFRES]->HasForm(result))
+			{
+				if(mode_ == OperatingMode::INITIALIZE)
+					log::DuplicateWarn("Result"sv, result);
+				infos_[InfoType::AFORG_DUP]++;
+				continue;
+			}
+
+			lists_[FormListType::AFREC]->AddForm(recipe);
+			lists_[FormListType::AFRES]->AddForm(result);
+			infos_[InfoType::AFORG_ADD]++;
+			if(debug_mode_)
+				log::AddedPair("Recipe", recipe, "Result", result);
+		}
+		if(mode_ == OperatingMode::INITIALIZE)
+		{
+			log::level--;
+			log::TotalAdded("Recipes", infos_[InfoType::AFORG_ADD], infos_[InfoType::AFORG_DUP]);
+			log::Header();
 		}
 	}
 
 	inline void Manipulator::Summary()
 	{
-		logger::info("{:-^47}", "SUMMARY");
-		logger::info("{} valid configs, {} invalid. {} total entries, {} valid, {} invalid.",
-					 valid_configs_,
-					 invalid_configs_,
-					 total_valid_entries_ + total_invalid_entries_,
-					 total_valid_entries_,
-					 total_invalid_entries_);
-		logger::info("{} FormLists, {} valid, {} invalid. {} total Forms, {} unique, {} missing, {} duplicates.",
-					 form_lists_.size() + total_missing_form_lists_,
-					 form_lists_.size(),
-					 total_missing_form_lists_,
-					 total_found_forms_ + total_missing_forms_,
-					 total_found_forms_ - fl_total_duplicates_ - plants_duplicates_ - boy_toys_duplicates_ - girl_toys_duplicates_,
-					 total_missing_forms_,
-					 fl_total_duplicates_ + plants_duplicates_ + boy_toys_duplicates_ + girl_toys_duplicates_);
-		logger::info("{} FromLists Aliases added, {} duplicates, {} not existing.", aliases_.size(), aliases_duplicates_, non_existent_aliases_);
-		logger::info("{} Forms Groups added, {} duplicates, {} not existing.", groups_.size(), groups_duplicates_, non_existent_groups_);
-		logger::info("{} new plants added, skipped {} duplicates.", plants_added_, plants_duplicates_);
-		logger::info("{} new Boy's Toys added, skipped {} duplicates.", boy_toys_added_, boy_toys_duplicates_);
-		logger::info("{} new Girl's Toys added, skipped {} duplicates.", girl_toys_added_, girl_toys_duplicates_);
-		logger::info("{} new Forms added to {} FormLists, skipped {} duplicates.", fl_total_added_, form_lists_.size(), fl_total_duplicates_);
-		logger::info("{:-^47}", " ^_^ ");
+		log::Header("SUMMARY"sv);
+		log::Info("{} valid configs, {} invalid. {} total entries, {} valid, {} invalid.",
+				  infos_[InfoType::CONFIGS_V],
+				  infos_[InfoType::CONFIGS_IN],
+				  infos_[InfoType::ENTRIES_V] + infos_[InfoType::ENTRIES_IN],
+				  infos_[InfoType::ENTRIES_V],
+				  infos_[InfoType::ENTRIES_IN]);
+		log::Info("{} FormLists, {} valid, {} invalid. {} total Forms, {} unique, {} missing, {} duplicates.",
+				  form_lists_.size() + infos_[InfoType::FLIST_MIS],
+				  form_lists_.size(),
+				  infos_[InfoType::FLIST_MIS],
+				  infos_[InfoType::FORMS] + infos_[InfoType::FORMS_MISS],
+				  infos_[InfoType::FORMS] - infos_[InfoType::PLANTS_DUP] - infos_[InfoType::BOY_TOYS_DUP] - infos_[InfoType::GIRL_TOYS_DUP] - infos_[InfoType::FORMS_DUP],
+				  infos_[InfoType::FORMS_MISS],
+				  infos_[InfoType::FORMS_DUP] + infos_[InfoType::PLANTS_DUP] + infos_[InfoType::BOY_TOYS_DUP] + infos_[InfoType::GIRL_TOYS_DUP]);
+		log::Info("{} FromLists Aliases added, {} duplicates, {} not existing.", aliases_.size(), infos_[InfoType::ALIASES_DUP], infos_[InfoType::ALIASES_NE]);
+		log::Info("{} Forms Groups added, {} duplicates, {} not existing.", groups_.size(), infos_[InfoType::GROUPS_DUP], infos_[InfoType::GROUPS_NE]);
+		log::Info("{} new plants added, skipped {} duplicates.", infos_[InfoType::PLANTS_ADD], infos_[InfoType::PLANTS_DUP]);
+		log::Info("{} new Boy's Toys added, skipped {} duplicates.", infos_[InfoType::B_TOYS], infos_[InfoType::BOY_TOYS_DUP]);
+		log::Info("{} new Girl's Toys added, skipped {} duplicates.", infos_[InfoType::G_TOYS], infos_[InfoType::GIRL_TOYS_DUP]);
+		log::Info("{} new Hair Colors added, skipped {} duplicates.", infos_[InfoType::HAIRC], infos_[InfoType::HAIRC_DUP]);
+		log::Info("{} new Atronach Forge recipes added, skipped {} duplicates.", infos_[InfoType::AFORG_ADD], infos_[InfoType::AFORG_DUP]);
+		log::Info("{} new Forms added to {} FormLists, skipped {} duplicates.", infos_[InfoType::FORMS_ADD], form_lists_.size(), infos_[InfoType::FORMS_DUP]);
+		log::Info("{} new Mod Events added, skipped {} invalid.", infos_[InfoType::MODEV], infos_[InfoType::MODEV_INV]);
+		log::Header(" ^_^ "sv);
 	}
 
-	inline void Manipulator::findList(const std::string_view& fei, RE::BGSListForm*& formList) const
+	inline void Manipulator::SetNewGameMode()
 	{
-		formList = RE::TESForm::LookupByEditorID<RE::BGSListForm>(fei);
-
-		if(formList)
-		{
-			if(debug_mode_)
-				logger::info("Found FormList {} \"{}\" [{:X}]", fei, formList->GetName(), formList->formID);
-		}
-		else
-			logger::error("Unable to find FormList {}.", fei);
+		mode_ = OperatingMode::NEW_GAME;
 	}
 
-	inline bool Manipulator::addFormList(const std::string& entry)
+	inline void Manipulator::SetLoadGameMode()
+	{
+		mode_ = OperatingMode::LOAD_GAME;
+	}
+
+	inline EventManager& Manipulator::GetEventManager()
+	{
+		return event_manager_;
+	}
+
+	inline bool Manipulator::parseFormList(const std::string& entry)
 	{
 		const auto sections = string::split(entry, "|");
 		if(sections.size() != 2)
 		{
-			logger::error("            Wrong FormList format. Expected 2 sections, got {}.", sections.size());
+			log::Error("Wrong FormList format. Expected 2 sections, got {}.", sections.size());
 			return false;
 		}
 
@@ -495,18 +592,18 @@ namespace flm
 				form_lists = aliases_[form_list_info];
 			else
 			{
-				logger::error("        Unknown Alias: {}.", form_list_info);
-				non_existent_aliases_++;
+				log::Error("Unknown Alias: {}.", form_list_info);
+				infos_[InfoType::ALIASES_NE]++;
 				found_destination = false;
 			}
 		}
 		else
 		{
-			const auto form_list = FindFormList(form_list_info);
+			const auto form_list = FindForm<RE::BGSListForm>(form_list_info);
 			if(!form_list)
 			{
-				logger::error("            Unable to find FormList: {}.", form_list_info);
-				total_missing_form_lists_++;
+				log::Error("Unable to find FormList: {}.", form_list_info);
+				infos_[InfoType::FLIST_MIS]++;
 				found_destination = false;
 			}
 			else
@@ -518,41 +615,19 @@ namespace flm
 		std::vector<RE::TESForm*> forms;
 		int missing = 0;
 		for(auto& fs : forms_sections)
-		{
-			if(fs.starts_with("#"))
-			{
-				fs.erase(0, 1);
-				if(groups_.contains(fs))
-					forms.insert(forms.end(), groups_[fs].begin(), groups_[fs].end());
-				else
-				{
-					logger::error("            Unknown Group: {}.", fs);
-					non_existent_groups_++;
-				}
-			}
-			else
-			{
-				auto form = FindForm(fs);
-				if(!form)
-				{
-					logger::error("            Unable to find Form: {}.", fs);
-					missing++;
-					continue;
-				}
-				forms.emplace_back(form);
-			}
-		}
+			if(parseFormEntry(fs, forms) == -1)
+				missing++;
 
 		if(!found_destination)
 			return false;
 
-		total_found_forms_ += forms.size();
-		total_missing_forms_ += missing;
+		infos_[InfoType::FORMS] += forms.size();
+		infos_[InfoType::FORMS_MISS] += missing;
 
 		for(auto& fl : form_lists)
 		{
 			if(debug_mode_)
-				logger::info("        Found FormList \"{}\" [{:X}], {} Forms, {} missing Forms.", fl->GetName(), fl->formID, forms.size(), missing);
+				log::Info("Found FormList \"{}\" [{:X}], {} Forms, {} missing Forms.", fl->GetName(), fl->formID, forms.size(), missing);
 			if(form_lists_.contains(fl))
 				form_lists_[fl].insert(form_lists_[fl].end(), forms.begin(), forms.end());
 			else
@@ -561,12 +636,12 @@ namespace flm
 		return true;
 	}
 
-	inline bool Manipulator::addPlant(const std::string& entry)
+	inline bool Manipulator::parsePlant(const std::string& entry)
 	{
 		const auto sections = string::split(entry, "|");
 		if(sections.size() != 2)
 		{
-			logger::error("            Wrong Plant format. Expected 2 sections, got {}.", sections.size());
+			log::Error("Wrong Plant format. Expected 2 sections, got {}.", sections.size());
 			return false;
 		}
 
@@ -574,40 +649,41 @@ namespace flm
 		const auto seed = FindForm(seed_info);
 		if(!seed)
 		{
-			logger::error("            Unable to find seed: {}.", seed_info);
-			total_missing_forms_++;
+			log::Error("Unable to find seed: {}.", seed_info);
+			infos_[InfoType::FORMS_MISS]++;
 		}
 
 		const auto plant_info = sections[1];
 		const auto plant = FindForm(plant_info);
 		if(!plant)
 		{
-			logger::error("            Unable to find plant: {}.", plant_info);
-			total_missing_forms_++;
+			log::Error("Unable to find plant: {}.", plant_info);
+			infos_[InfoType::FORMS_MISS]++;
 		}
 
 		if(!seed || !plant)
 			return false;
 
 		if(seed->GetFormType() != RE::FormType::Ingredient && seed->GetFormType() != RE::FormType::AlchemyItem && seed->GetFormType() != RE::FormType::Activator)
-			logger::warn("            {} type {:X} is not Ingredient, AlchemyItem or Activator.", seed_info, static_cast<int>(seed->GetFormType()));
+			log::Warn("{} type {:X} is not Ingredient, AlchemyItem or Activator.", seed_info, static_cast<int>(seed->GetFormType()));
 
 		if(plant->GetFormType() != RE::FormType::Flora && plant->GetFormType() != RE::FormType::Tree && plant->GetFormType() != RE::FormType::Container && plant->GetFormType() != RE::FormType::Activator && plant->GetFormType() != RE::FormType::Misc)
-			logger::warn("            {} type {:X} is not Flora, Tree, Activator, Misc or Container.", plant_info, static_cast<int>(plant->GetFormType()));
+			log::Warn("{} type {:X} is not Flora, Tree, Activator, Misc or Container.", plant_info, static_cast<int>(plant->GetFormType()));
 
 		if(debug_mode_)
-			logger::info("        Found Seed \"{}\" [{:X}], Plant \"{}\" [{:X}].", seed->GetName(), seed->formID, plant->GetName(), plant->formID);
+			log::Info("Found Seed \"{}\" [{:X}], Plant \"{}\" [{:X}].", seed->GetName(), seed->formID, plant->GetName(), plant->formID);
 
+		infos_[InfoType::FORMS] += 2;
 		plants_.emplace_back(seed, plant);
 		return true;
 	}
 
-	inline bool Manipulator::addToys(const std::string& entry, bool boy)
+	inline bool Manipulator::parseBToys(const std::string& entry)
 	{
 		const auto sections = string::split(entry, "|");
 		if(sections.size() != 1)
 		{
-			logger::error("            Wrong Toys format. Expected 1 sections, got {}.", sections.size());
+			log::Error("Wrong Boy's Toys format. Expected 1 sections, got {}.", sections.size());
 			return false;
 		}
 
@@ -617,56 +693,54 @@ namespace flm
 		int missing = 0;
 		for(auto& fs : forms_sections)
 		{
-			if(fs.starts_with("#"))
-			{
-				fs.erase(0, 1);
-				if(groups_.contains(fs))
-				{
-					for(auto& f : groups_[fs])
-					{
-						if(boy)
-							boy_toys_.emplace_back(f);
-						else
-							girl_toys_.emplace_back(f);
-						amount++;
-					}
-				}
-				else
-				{
-					logger::error("            Unknown Group: {}.", fs);
-					non_existent_groups_++;
-				}
-			}
-			else
-			{
-				auto form = FindForm(fs);
-				if(!form)
-				{
-					logger::error("            Unable to find Form: {} for Toys.", fs);
-					missing++;
-					continue;
-				}
-				if(boy)
-					boy_toys_.emplace_back(form);
-				else
-					girl_toys_.emplace_back(form);
+			if(const int res = parseFormEntry(fs, boy_toys_); res == -1)
+				missing++;
+			else if(res == 0)
 				amount++;
-			}
 		}
+
 		if(debug_mode_)
-			logger::info("        Toys: found {} Forms, {} missing Forms.", amount, missing);
-		total_found_forms_ += amount;
-		total_missing_forms_ += missing;
+			log::Info("Boy's Toys: found {} Forms, {} missing Forms.", amount, missing);
+		infos_[InfoType::FORMS] += amount;
+		infos_[InfoType::FORMS_MISS] += missing;
 
 		return true;
 	}
 
-	inline bool Manipulator::addAlias(const std::string& entry)
+	inline bool Manipulator::parseGToys(const std::string& entry)
+	{
+		const auto sections = string::split(entry, "|");
+		if(sections.size() != 1)
+		{
+			log::Error("Wrong Girl's Toys format. Expected 1 sections, got {}.", sections.size());
+			return false;
+		}
+
+		const auto forms_info = sections[0];
+		auto forms_sections = string::split(forms_info, ",");
+		int amount = 0;
+		int missing = 0;
+		for(auto& fs : forms_sections)
+		{
+			if(const int res = parseFormEntry(fs, girl_toys_); res == -1)
+				missing++;
+			else if(res == 0)
+				amount++;
+		}
+		if(debug_mode_)
+			log::Info("Girl's Toys: found {} Forms, {} missing Forms.", amount, missing);
+		infos_[InfoType::FORMS] += amount;
+		infos_[InfoType::FORMS_MISS] += missing;
+
+		return true;
+	}
+
+	inline bool Manipulator::parseAlias(const std::string& entry)
 	{
 		const auto sections = string::split(entry, "|");
 		if(sections.size() != 2)
 		{
-			logger::error("            Wrong Alias format. Expected 2 sections, got {}.", sections.size());
+			log::Error("Wrong Alias format. Expected 2 sections, got {}.", sections.size());
 			return false;
 		}
 
@@ -674,8 +748,8 @@ namespace flm
 		const auto alias_info = sections[0];
 		if(aliases_.contains(alias_info))
 		{
-			logger::error("            Alias {} exists.", alias_info);
-			aliases_duplicates_++;
+			log::Error("Alias {} exists.", alias_info);
+			infos_[InfoType::ALIASES_DUP]++;
 			duplicate = true;
 		}
 
@@ -685,10 +759,10 @@ namespace flm
 		int missing = 0;
 		for(auto& fs : form_lists_sections)
 		{
-			auto form_list = FindFormList(fs);
+			auto form_list = FindForm<RE::BGSListForm>(fs);
 			if(!form_list)
 			{
-				logger::error("            Unable to find FormList: {} for Alias.", fs);
+				log::Error("Unable to find FormList: {} for Alias.", fs);
 				missing++;
 				continue;
 			}
@@ -697,23 +771,31 @@ namespace flm
 
 		if(duplicate)
 		{
-			logger::warn("Entry will be omitted due to incorrect Alias name.");
+			log::Warn("Entry will be omitted due to incorrect Alias name.");
 			return false;
 		}
 
-		aliases_.emplace(std::piecewise_construct, std::forward_as_tuple(alias_info), std::forward_as_tuple(form_lists));
-		if(debug_mode_)
-			logger::info("        FormLists Alias \"{}\" added with {} FormsLists, {} missing FormLists.", alias_info, form_lists.size(), missing);
+		if(form_lists.size() > 0)
+		{
+			aliases_.emplace(std::piecewise_construct, std::forward_as_tuple(alias_info), std::forward_as_tuple(form_lists));
+			if(debug_mode_)
+				log::Info("FormLists Alias \"{}\" added with {} FormsLists, {} missing FormLists.", alias_info, form_lists.size(), missing);
+		}
+		else
+		{
+			log::Info("FormLists Alias \"{}\" was omitted because it does not have valid Forms.", alias_info);
+			return false;
+		}
 
 		return true;
 	}
 
-	inline bool Manipulator::addGroup(const std::string& entry)
+	inline bool Manipulator::parseGroup(const std::string& entry)
 	{
 		const auto sections = string::split(entry, "|");
 		if(sections.size() != 2)
 		{
-			logger::error("            Wrong Group format. Expected 2 sections, got {}.", sections.size());
+			log::Error("Wrong Group format. Expected 2 sections, got {}.", sections.size());
 			return false;
 		}
 
@@ -722,8 +804,8 @@ namespace flm
 
 		if(groups_.contains(group_info))
 		{
-			logger::error("            Group {} exists..", group_info);
-			groups_duplicates_++;
+			log::Error("Group {} exists..", group_info);
+			infos_[InfoType::GROUPS_DUP]++;
 			duplicate = true;
 		}
 
@@ -736,7 +818,7 @@ namespace flm
 			auto form = FindForm(fs);
 			if(!form)
 			{
-				logger::error("            Unable to find Form: {} for Group.", fs);
+				log::Error("Unable to find Form: {} for Group.", fs);
 				missing++;
 				continue;
 			}
@@ -745,30 +827,233 @@ namespace flm
 
 		if(duplicate)
 		{
-			logger::warn("Entry will be omitted due to incorrect Group name.");
+			log::Warn("Entry will be omitted due to incorrect Group name.");
 			return false;
 		}
 
-		groups_.emplace(std::piecewise_construct, std::forward_as_tuple(group_info), std::forward_as_tuple(forms));
-		if(debug_mode_)
-			logger::info("        Forms Group \"{}\" added with {} Forms, {} missing Forms.", group_info, forms.size(), missing);
+		if(forms.size() > 0)
+		{
+			groups_.emplace(std::piecewise_construct, std::forward_as_tuple(group_info), std::forward_as_tuple(forms));
+			if(debug_mode_)
+				log::Info("Forms Group \"{}\" added with {} Forms, {} missing Forms.", group_info, forms.size(), missing);
+		}
+		else
+		{
+			log::Info("Forms Group \"{}\" was omitted because it does not have valid Forms.", group_info);
+			return false;
+		}
 
 		return true;
 	}
 
-	inline bool Manipulator::addFormToFormList(RE::BGSListForm*& list, RE::TESForm* form)
+	inline bool Manipulator::parseModEvent(const std::string& entry)
+	{
+		const auto sections = string::split(entry, "|");
+		if(sections.size() != 3)
+		{
+			log::Error("Wrong FormList format. Expected 3 sections, got {}.", sections.size());
+			infos_[InfoType::MODEV_INV]++;
+			return false;
+		}
+
+		bool found_destination = true;
+
+		const auto event_name = sections[0];
+		if(event_name.empty())
+		{
+			log::Error("The event name is empty, skipping!");
+			infos_[InfoType::MODEV_INV]++;
+			return false;
+		}
+
+		if(ContainsNonAlpha(event_name))
+		{
+			log::Error("The event name: {}, can only contain letters, skipping!", event_name);
+			infos_[InfoType::MODEV_INV]++;
+			return false;
+		}
+
+		auto form_list_info = sections[1];
+		std::vector<RE::BGSListForm*> form_lists;
+
+		if(form_list_info.starts_with("#"))
+		{
+			form_list_info.erase(0, 1);
+			if(aliases_.contains(form_list_info))
+				form_lists = aliases_[form_list_info];
+			else
+			{
+				log::Error("Unknown Alias: {}.", form_list_info);
+				infos_[InfoType::ALIASES_NE]++;
+				found_destination = false;
+			}
+		}
+		else
+		{
+			const auto form_list = FindForm<RE::BGSListForm>(form_list_info);
+			if(!form_list)
+			{
+				log::Error("Unable to find FormList: {}.", form_list_info);
+				infos_[InfoType::FLIST_MIS]++;
+				found_destination = false;
+			}
+			else
+				form_lists.emplace_back(form_list);
+		}
+
+		const auto forms_info = sections[2];
+		auto forms_sections = string::split(forms_info, ",");
+		std::vector<RE::TESForm*> forms;
+		int missing = 0;
+		for(auto& fs : forms_sections)
+			if(parseFormEntry(fs, forms) == -1)
+				missing++;
+
+		if(!found_destination)
+			return false;
+
+		infos_[InfoType::FORMS] += forms.size();
+		infos_[InfoType::FORMS_MISS] += missing;
+
+		if(form_lists.size() > 0 && forms.size() > 0)
+		{
+			auto& events = event_manager_.Events();
+			if(!events.contains(event_name))
+				events.emplace(event_name, FormListsData());
+
+			FormListsData& mod_event_data = events[event_name];
+
+			for(auto& fl : form_lists)
+			{
+				if(debug_mode_)
+					log::Info("Mod Event: {} => found FormList \"{}\" [{:X}], {} Forms, {} missing Forms.",
+							  event_name,
+							  fl->GetName(),
+							  fl->formID,
+							  forms.size(),
+							  missing);
+				if(mod_event_data.contains(fl))
+					mod_event_data[fl].insert(mod_event_data[fl].end(), forms.begin(), forms.end());
+				else
+					mod_event_data.emplace(std::piecewise_construct, std::forward_as_tuple(fl), std::forward_as_tuple(forms));
+			}
+			infos_[InfoType::MODEV]++;
+		}
+		else
+		{
+			log::Info("Mod Event {} do not have any valid FormLists or Forms, skipping.", event_name);
+			infos_[InfoType::MODEV_INV]++;
+			return false;
+		}
+
+		return true;
+	}
+
+	inline bool Manipulator::parseHairColors(const std::string& entry)
+	{
+		const auto sections = string::split(entry, "|");
+		if(sections.size() != 1)
+		{
+			log::Error("Wrong Hair Color format. Expected 1 sections, got {}.", sections.size());
+			return false;
+		}
+
+		const auto forms_info = sections[0];
+		auto forms_sections = string::split(forms_info, ",");
+		int amount = 0;
+		int missing = 0;
+		for(auto& fs : forms_sections)
+		{
+			if(const int res = parseFormEntry(fs, hair_colors_); res == -1)
+				missing++;
+			else if(res == 0)
+				amount++;
+		}
+		if(debug_mode_)
+			log::Info("Hair Colors: found {} Forms, {} missing Forms.", amount, missing);
+		infos_[InfoType::FORMS] += amount;
+		infos_[InfoType::FORMS_MISS] += missing;
+
+		return true;
+	}
+
+	inline bool Manipulator::parseAtronachForge(const std::string& entry)
+	{
+		const auto sections = string::split(entry, "|");
+		if(sections.size() != 2)
+		{
+			log::Error("Wrong Atronach Forge format. Expected 2 sections, got {}.", sections.size());
+			return false;
+		}
+
+		const auto recipe_info = sections[0];
+		const auto recipe = FindForm(recipe_info);
+		if(!recipe)
+		{
+			log::Error("Unable to find recipe: {}.", recipe_info);
+			infos_[InfoType::FORMS_MISS]++;
+		}
+
+		const auto result_info = sections[1];
+		const auto result = FindForm(result_info);
+		if(!result)
+		{
+			log::Error("Unable to find result for recipe: {}.", result_info);
+			infos_[InfoType::FORMS_MISS]++;
+		}
+
+		if(!recipe || !result)
+			return false;
+
+		if(debug_mode_)
+			log::Info("Found Recipe \"{}\" [{:X}], Result \"{}\" [{:X}].", recipe->GetName(), recipe->formID, result->GetName(), result->formID);
+
+		infos_[InfoType::FORMS] += 2;
+		atronach_forge_.emplace_back(recipe, result);
+		return true;
+	}
+
+	inline bool Manipulator::addFormToFormList(RE::BGSListForm*& list, RE::TESForm* form) const
 	{
 		if(list->HasForm(form))
 		{
-			if(!reload)
-				logger::warn("Form \"{}\" [{:X}] already on the list!", form->GetName(), form->formID);
+			if(mode_ == OperatingMode::INITIALIZE)
+				log::DuplicateWarn("Form"sv, form);
 			return false;
 		}
 
 		list->AddForm(form);
-		logger::info("Form \"{}\" [{:X}]  added!", form->GetName(), form->formID);
+		log::Info("Form \"{}\" [{:X}]  added!", form->GetName(), form->formID);
 
 		return true;
+	}
+
+	inline int Manipulator::parseFormEntry(std::string& entry, std::vector<RE::TESForm*>& forms)
+	{
+		if(entry.starts_with("#"))
+		{
+			entry.erase(0, 1);
+			if(groups_.contains(entry))
+				forms.insert(forms.end(), groups_[entry].begin(), groups_[entry].end());
+			else
+			{
+				log::Error("Unknown Group: {}.", entry);
+				infos_[InfoType::GROUPS_NE]++;
+				return -2;
+			}
+		}
+		else
+		{
+			auto form = FindForm(entry);
+			if(!form)
+			{
+				log::Error("Unable to find Form: {}.", entry);
+				return -1;
+			}
+			forms.emplace_back(form);
+		}
+
+		return 0;
 	}
 
 	inline Manipulator manipulator;
