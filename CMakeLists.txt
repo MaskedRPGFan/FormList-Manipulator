@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22)
 
 project(
     FormListManipulator
-    VERSION 1.3.0
+    VERSION 1.3.1
     LANGUAGES CXX
     DESCRIPTION "Allows dynamic modification of FormLists."
 )
@@ -61,7 +61,7 @@ add_custom_command(
 	TARGET "${PROJECT_NAME}"
 	POST_BUILD
 	COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:${PROJECT_NAME}>" "${DLL_FOLDER}"
-	COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/Scripts" "${MOD_FOLDER}/Scripts"
+	#COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/Scripts" "${MOD_FOLDER}/Scripts"
 	VERBATIM
 )
 
