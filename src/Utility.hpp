@@ -2,6 +2,7 @@
 
 #include "LogInfo.hpp"
 #include "OperatingMode.hpp"
+#include "MergeMapperPluginAPI.h"
 
 namespace flm
 {
@@ -38,6 +39,12 @@ namespace flm
 			if(form_id_str.size() == 10)
 				form_id_str.erase(2, 2);
 			auto form_id = string::lexical_cast<RE::FormID>(form_id_str, true);
+      
+      if (g_mergeMapperInterface && T == RE::BGSListForm){
+				const auto processedFormPair = g_mergeMapperInterface->GetNewFormID(plugin.c_str(), form_id);
+				plugin = std::string(processedFormPair.first);
+				form_id = processedFormPair.second;
+			}
 
 			if(const auto f = GetTesForm(plugin, form_id))
 				return f->As<T>();

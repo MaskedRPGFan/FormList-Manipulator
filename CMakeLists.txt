@@ -23,23 +23,26 @@ configure_file(
     @ONLY
 )
 
+find_package(binary_io CONFIG REQUIRED)
+find_package(CommonLibSSE CONFIG REQUIRED)
+find_package(xbyak CONFIG REQUIRED)
+find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
+find_path(MERGEMAPPER_INCLUDE_DIRS "MergeMapperPluginAPI.h")
+
 add_library(
     ${PROJECT_NAME}
     SHARED
     src/main.cpp
     src/Plugin.hpp
     ${CMAKE_CURRENT_BINARY_DIR}/version.rc
+	${MERGEMAPPER_INCLUDE_DIRS}/MergeMapperPluginAPI.cpp
 )
-
-find_package(binary_io CONFIG REQUIRED)
-find_package(CommonLibSSE CONFIG REQUIRED)
-find_package(xbyak CONFIG REQUIRED)
-find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
 
 target_link_libraries(${PROJECT_NAME} PRIVATE CommonLibSSE::CommonLibSSE)
 target_link_libraries(${PROJECT_NAME} PRIVATE xbyak::xbyak)
 target_include_directories(${PROJECT_NAME} PRIVATE ${SIMPLEINI_INCLUDE_DIRS})
 target_include_directories(${PROJECT_NAME} PRIVATE src)
+target_include_directories(${PROJECT_NAME} PRIVATE ${MERGEMAPPER_INCLUDE_DIRS})
 
 set(MOD_FOLDER "$ENV{SKSE_SKYRIM_SE_MODS}/${PROJECT_NAME} - DEV")
 set(DLL_FOLDER "${MOD_FOLDER}/SKSE/Plugins")

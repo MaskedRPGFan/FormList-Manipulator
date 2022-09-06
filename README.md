@@ -81,5 +81,34 @@ Created with [CommonLibSSE-NG](https://github.com/CharmedBaryon/CommonLibSSE-NG)
 * instant effect and better performance (DLL instead of scripts),
 * dynamic modification - you can close the game, change the contents of the INI file, and when you run game again, everything will be changed according to the contents of the file.
 
+## Requirements
+* [CMake](https://cmake.org/)
+	* Add this to your `PATH`
+* [PowerShell](https://github.com/PowerShell/PowerShell/releases/latest)
+* [Vcpkg](https://github.com/microsoft/vcpkg)
+	* Add the environment variable `VCPKG_ROOT` with the value as the path to the folder containing vcpkg
+* [Visual Studio Community 2019](https://visualstudio.microsoft.com/)
+	* Desktop development with C++
+* [CommonLibSSE-NG](https://github.com/CharmedBaryon/CommonLibSSE-NG)
+
+## User Requirements
+* [Address Library for SKSE](https://www.nexusmods.com/skyrimspecialedition/mods/32444)
+	* Needed for SSE/AE
+* [VR Address Library for SKSEVR](https://www.nexusmods.com/skyrimspecialedition/mods/58101)
+	* Needed for VR
+
+## Register Visual Studio as a Generator
+* Open `x64 Native Tools Command Prompt`
+* Run `cmake`
+* Close the cmd window
+
+## Building
+```
+git clone https://github.com/MaskedRPGFan/FormList-Manipulator.git
+cd FormList-Manipulator
+cmake --preset vs2022-windows-vcpkg
+cmake --build build --config Release
+# built files will be a build/Release
+```
 ## License
 [MIT](LICENSE)
