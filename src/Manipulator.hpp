@@ -621,7 +621,7 @@ namespace flm
 		if(!found_destination)
 			return false;
 
-		infos_[InfoType::FORMS] += forms.size();
+		infos_[InfoType::FORMS] += static_cast<int>(forms.size());
 		infos_[InfoType::FORMS_MISS] += missing;
 
 		for(auto& fl : form_lists)
@@ -912,7 +912,7 @@ namespace flm
 		if(!found_destination)
 			return false;
 
-		infos_[InfoType::FORMS] += forms.size();
+		infos_[InfoType::FORMS] += static_cast<int>(forms.size());
 		infos_[InfoType::FORMS_MISS] += missing;
 
 		if(form_lists.size() > 0 && forms.size() > 0)
