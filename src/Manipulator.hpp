@@ -60,25 +60,27 @@ namespace flm
 			EventManager event_manager_;           /* Manages sending and receiving mod events. */
 
 			const std::array<ParseEntryCallback, EntryType::ALL> add_callbacks_{
-				std::bind(&Manipulator::parseAlias, this, std::placeholders::_1),         /* Aliases for FormLists. */
-				std::bind(&Manipulator::parseGroup, this, std::placeholders::_1),         /* Groups for Forms. */
-				std::bind(&Manipulator::parseModEvent, this, std::placeholders::_1),      /* Mod events. */
-				std::bind(&Manipulator::parseFormList, this, std::placeholders::_1),      /* FromList. */
-				std::bind(&Manipulator::parsePlant, this, std::placeholders::_1),         /* Plant. */
-				std::bind(&Manipulator::parseBToys, this, std::placeholders::_1),         /* Boy's toys. */
-				std::bind(&Manipulator::parseGToys, this, std::placeholders::_1),         /* Girl's toys. */
-				std::bind(&Manipulator::parseHairColors, this, std::placeholders::_1),    /* Hair colors. */
-				std::bind(&Manipulator::parseAtronachForge, this, std::placeholders::_1), /* Atronach forge. */
-			};                                                                            /* Functions used to parse entries. */
+				std::bind(&Manipulator::parseAlias, this, std::placeholders::_1),              /* Aliases for FormLists. */
+				std::bind(&Manipulator::parseGroup, this, std::placeholders::_1),              /* Groups for Forms. */
+				std::bind(&Manipulator::parseModEvent, this, std::placeholders::_1),           /* Mod events. */
+				std::bind(&Manipulator::parseFormList, this, std::placeholders::_1),           /* FromList. */
+				std::bind(&Manipulator::parsePlant, this, std::placeholders::_1),              /* Plant. */
+				std::bind(&Manipulator::parseBToys, this, std::placeholders::_1),              /* Boy's toys. */
+				std::bind(&Manipulator::parseGToys, this, std::placeholders::_1),              /* Girl's toys. */
+				std::bind(&Manipulator::parseHairColors, this, std::placeholders::_1),         /* Hair colors. */
+				std::bind(&Manipulator::parseAtronachForge, this, std::placeholders::_1),      /* Atronach forge. */
+				std::bind(&Manipulator::parseAtronachForgeSigil, this, std::placeholders::_1), /* Atronach forge with Sigil Stone. */
+			};                                                                                 /* Functions used to parse entries. */
 
-			std::map<std::string, std::vector<RE::BGSListForm*>> aliases_;      /* All valid Aliases. */
-			std::map<std::string, std::vector<RE::TESForm*>> groups_;           /* All valid Groups. */
-			FormListsData form_lists_;                                          /* All valid Forms for FormLists. */
-			std::vector<std::pair<RE::TESForm*, RE::TESForm*>> plants_;         /* All valid Forms with seeds and plants. */
-			std::vector<RE::TESForm*> boy_toys_;                                /* All valid Forms with boy's toys. */
-			std::vector<RE::TESForm*> girl_toys_;                               /* All valid Forms with girl's toys. */
-			std::vector<RE::TESForm*> hair_colors_;                             /* All valid Forms with hair colors. */
-			std::vector<std::pair<RE::TESForm*, RE::TESForm*>> atronach_forge_; /* All valid Forms with recipes and results for Atronach Forge. */
+			std::map<std::string, std::vector<RE::BGSListForm*>> aliases_; /* All valid Aliases. */
+			std::map<std::string, std::vector<RE::TESForm*>> groups_;      /* All valid Groups. */
+			FormListsData form_lists_;                                     /* All valid Forms for FormLists. */
+			std::vector<FormPair> plants_;                                 /* All valid Forms with seeds and plants. */
+			std::vector<RE::TESForm*> boy_toys_;                           /* All valid Forms with boy's toys. */
+			std::vector<RE::TESForm*> girl_toys_;                          /* All valid Forms with girl's toys. */
+			std::vector<RE::TESForm*> hair_colors_;                        /* All valid Forms with hair colors. */
+			std::vector<FormPair> atronach_forge_;                         /* All valid Forms with recipes and results for Atronach Forge. */
+			std::vector<FormPair> atronach_sigil_forge_;                   /* All valid Forms with recipes and results for Atronach Forge with Sigil. */
 
 			/**
 			 * \brief Finds all FormLists whose use is simplified.
@@ -115,6 +117,10 @@ namespace flm
 			 * \brief Adds the correct pairs of recipes and results to the game.
 			 */
 			void addAtronachForgeRecipes();
+			/**
+			 * \brief Adds the correct pairs of recipes and results with Sigil Stone to the game.
+			 */
+			void addAtronachForgeSigilRecipes();
 			/**
 			 * \brief Adds Form and FromList to internal structure based on string entry. String is validated.
 			 * \param entry                     - String in the format FList|Form, Form, #Group, etc.
@@ -171,6 +177,12 @@ namespace flm
 			 */
 			bool parseAtronachForge(const std::string& entry);
 			/**
+			 * \brief Adds recipe and result to internal structure based on string entry. String is validated.
+			 * \param entry                     - String in the format Recipe|Result.
+			 * \return                          - True, if everything went fine.
+			 */
+			bool parseAtronachForgeSigil(const std::string& entry);
+			/**
 			 * \brief Parse form entry.
 			 * \param entry                 - Entry to parse.
 			 * \param forms                 - Forms vector, where the found forms will be added.
@@ -214,6 +226,7 @@ namespace flm
 		addKidsToys();
 		addHairColors();
 		addAtronachForgeRecipes();
+		addAtronachForgeSigilRecipes();
 		auto [added, duplicates] = AddGeneric(form_lists_, mode_, debug_mode_);
 		infos_[InfoType::FORMS_ADD] += added;
 		infos_[InfoType::FORMS_DUP] += duplicates;
@@ -222,7 +235,11 @@ namespace flm
 	inline void Manipulator::findLists()
 	{
 		for(int type = 0; type != FormListType::ALL; type++)
+		{
 			lists_.emplace_back(FindForm<RE::BGSListForm>(FormListType::editor_id[type]));
+			if(lists_.back() == nullptr)
+				log::Error("Error: unable to find list: {}.", FormListType::editor_id[type]);
+		}
 	}
 
 	inline void Manipulator::findConfigs()
@@ -527,6 +544,46 @@ namespace flm
 		}
 	}
 
+	inline void Manipulator::addAtronachForgeSigilRecipes()
+	{
+		if(mode_ == OperatingMode::INITIALIZE)
+		{
+			log::Header("ATRONACH FORGE WITH SIGIL STONE"sv);
+			log::level++;
+		}
+
+		for(auto& [recipe, result] : atronach_sigil_forge_)
+		{
+			if(lists_[FormListType::ASFRC]->HasForm(recipe))
+			{
+				if(mode_ == OperatingMode::INITIALIZE)
+					log::DuplicateWarn("Recipe"sv, recipe);
+				infos_[InfoType::ASFRG_DUP]++;
+				continue;
+			}
+
+			if(lists_[FormListType::ASFRS]->HasForm(result))
+			{
+				if(mode_ == OperatingMode::INITIALIZE)
+					log::DuplicateWarn("Result"sv, result);
+				infos_[InfoType::ASFRG_DUP]++;
+				continue;
+			}
+
+			lists_[FormListType::ASFRC]->AddForm(recipe);
+			lists_[FormListType::ASFRS]->AddForm(result);
+			infos_[InfoType::ASFRG_ADD]++;
+			if(debug_mode_)
+				log::AddedPair("Recipe", recipe, "Result", result);
+		}
+		if(mode_ == OperatingMode::INITIALIZE)
+		{
+			log::level--;
+			log::TotalAdded("Recipes", infos_[InfoType::ASFRG_ADD], infos_[InfoType::ASFRG_DUP]);
+			log::Header();
+		}
+	}
+
 	inline void Manipulator::Summary()
 	{
 		log::Header("SUMMARY"sv);
@@ -551,6 +608,7 @@ namespace flm
 		log::Info("{} new Girl's Toys added, skipped {} duplicates.", infos_[InfoType::G_TOYS], infos_[InfoType::GIRL_TOYS_DUP]);
 		log::Info("{} new Hair Colors added, skipped {} duplicates.", infos_[InfoType::HAIRC], infos_[InfoType::HAIRC_DUP]);
 		log::Info("{} new Atronach Forge recipes added, skipped {} duplicates.", infos_[InfoType::AFORG_ADD], infos_[InfoType::AFORG_DUP]);
+		log::Info("{} new Atronach Forge recipes with Sigil Stone added, skipped {} duplicates.", infos_[InfoType::ASFRG_ADD], infos_[InfoType::ASFRG_DUP]);
 		log::Info("{} new Forms added to {} FormLists, skipped {} duplicates.", infos_[InfoType::FORMS_ADD], form_lists_.size(), infos_[InfoType::FORMS_DUP]);
 		log::Info("{} new Mod Events added, skipped {} invalid.", infos_[InfoType::MODEV], infos_[InfoType::MODEV_INV]);
 		log::Header(" ^_^ "sv);
@@ -1010,6 +1068,42 @@ namespace flm
 
 		infos_[InfoType::FORMS] += 2;
 		atronach_forge_.emplace_back(recipe, result);
+		return true;
+	}
+
+	inline bool Manipulator::parseAtronachForgeSigil(const std::string& entry)
+	{
+		const auto sections = string::split(entry, "|");
+		if(sections.size() != 2)
+		{
+			log::Error("Wrong Atronach Forge with Sigil Stone format. Expected 2 sections, got {}.", sections.size());
+			return false;
+		}
+
+		const auto recipe_info = sections[0];
+		const auto recipe = FindForm(recipe_info);
+		if(!recipe)
+		{
+			log::Error("Unable to find recipe: {}.", recipe_info);
+			infos_[InfoType::FORMS_MISS]++;
+		}
+
+		const auto result_info = sections[1];
+		const auto result = FindForm(result_info);
+		if(!result)
+		{
+			log::Error("Unable to find result for recipe: {}.", result_info);
+			infos_[InfoType::FORMS_MISS]++;
+		}
+
+		if(!recipe || !result)
+			return false;
+
+		if(debug_mode_)
+			log::Info("Found Recipe \"{}\" [{:X}], Result \"{}\" [{:X}].", recipe->GetName(), recipe->formID, result->GetName(), result->formID);
+
+		infos_[InfoType::FORMS] += 2;
+		atronach_sigil_forge_.emplace_back(recipe, result);
 		return true;
 	}
 

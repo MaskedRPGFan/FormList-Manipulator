@@ -1,14 +1,15 @@
 #pragma once
 
 #include "LogInfo.hpp"
-#include "OperatingMode.hpp"
 #include "MergeMapperPluginAPI.h"
+#include "OperatingMode.hpp"
 
 namespace flm
 {
 	using ParseEntryCallback = std::function<bool(const std::string&)>;          /* Pointer to the function that parses the entry. */
 	using FormListsData = std::map<RE::BGSListForm*, std::vector<RE::TESForm*>>; /* Data for mod events. */
 	using ModEvents = std::unordered_map<std::string, FormListsData>;            /* Mod events type. */
+	using FormPair = std::pair<RE::TESForm*, RE::TESForm*>;                      /* Pair of Forms*. */
 
 	/**
 	 * \brief Returns a poniter to Form based on mod name and record FromID.
@@ -39,11 +40,12 @@ namespace flm
 			if(form_id_str.size() == 10)
 				form_id_str.erase(2, 2);
 			auto form_id = string::lexical_cast<RE::FormID>(form_id_str, true);
-      
-			if (g_mergeMapperInterface){
-				const auto processedFormPair = g_mergeMapperInterface->GetNewFormID(plugin.c_str(), form_id);
-				plugin = std::string(processedFormPair.first);
-				form_id = processedFormPair.second;
+
+			if(g_mergeMapperInterface)
+			{
+				const auto [fst, snd] = g_mergeMapperInterface->GetNewFormID(plugin.c_str(), form_id);
+				plugin = std::string(fst);
+				form_id = snd;
 			}
 
 			if(const auto f = GetTesForm(plugin, form_id))
@@ -92,7 +94,7 @@ namespace flm
 		// strip leading zeros
 		static const boost::regex re_zeros(R"((0x00+)([0-9a-fA-F]+))", boost::regex_constants::optimize);
 		sanitized = regex_replace(sanitized, re_zeros, "0x$2");
-		
+
 		// swap dawnguard and dragonborn forms
 		// VR apparently does not load masters in order so the lookup fails
 		static const boost::regex re_dawnguard(R"((0x0*2)([0-9a-f]{6}))", static_cast<int>(boost::regex_constants::optimize) | static_cast<int>(boost::regex::icase));

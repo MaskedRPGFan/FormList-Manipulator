@@ -40,7 +40,10 @@ namespace flm::InfoType
 		HAIRC_DUP, /** Total amount of hair colors duplicates. */
 
 		AFORG_ADD, /** Total amount of added recipes and results to atronach forge. */
-		AFORG_DUP, /** Total amount of recipes and results duplicates. */
+		AFORG_DUP, /** Total amount of recipes and results duplicates to atronach forge. */
+
+		ASFRG_ADD, /** Total amount of added recipes and results to atronach forge with sigil stone. */
+		ASFRG_DUP, /** Total amount of recipes and results duplicates to atronach forge with sigil stone. */
 
 		MODEV,     /** Total amount of added Mod Events. */
 		MODEV_INV, /** Total amount of invalid Mod Events. */

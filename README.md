@@ -13,7 +13,7 @@ Configuration files can have any name, but they must be INI files whose name end
 Or they can be any INI files located in the "FLM" directory.
 Configuration files are processed in alphabetical order. First from the Data directory, then from the Data\FLM.
 
-Keys: Alias, Group, ModEvent, FormList, Plant, BToys, GToys, HairColors, AtronachForge are not case-sensitive.
+Keys: Alias, Group, ModEvent, FormList, Plant, BToys, GToys, HairColors, AtronachForge, AtronachForgeSigil are not case-sensitive.
 
 ##  General usage
 
@@ -48,7 +48,7 @@ Aliases are collections of FormLists. To use an Alias add the # sign before its 
 
 ```Group = NameForGroup|Form, Form, etc```
 
-Groups are collections of Forms. To use a Group add the # sign before its name. Groups are processed at the beginning of the configuration file, regardless of their position in the file. For FormList, ModEvent, BToy, GToy, HairColors, AtronachForge keywords.
+Groups are collections of Forms. To use a Group add the # sign before its name. Groups are processed at the beginning of the configuration file, regardless of their position in the file. For FormList, ModEvent, BToy, GToy, HairColors, AtronachForge, AtronachForgeSigil keywords.
 
 ## Simplified usage for Plants:
 
@@ -75,6 +75,14 @@ where,
 ## Simplified usage for Atronach Forge:
 
 ```AronachForge = Form|Form```
+
+where,
+* first form is for Recipe,
+* second for Result.
+
+## Simplified usage for Atronach Forge with Sigil Stone:
+
+```AronachForgeSigil = Form|Form```
 
 where,
 * first form is for Recipe,

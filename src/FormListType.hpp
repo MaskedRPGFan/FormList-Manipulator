@@ -14,6 +14,8 @@ namespace flm::FormListType
 		HAIRC,    /* Hair colors. */
 		AFREC,    /* Atronach forge recipe. */
 		AFRES,    /* Atronach forge result. */
+		ASFRC,    /* Atronach forge with Sigil Stone recipe. */
+		ASFRS,    /* Atronach forge with Sigil Stone result. */
 
 		ALL /* Amount of FormList types. */
 	};
@@ -24,7 +26,9 @@ namespace flm::FormListType
 		"BYOHRelationshipAdoptionPlayerGiftChildMale",   /* Boy's toys. */
 		"BYOHRelationshipAdoptionPlayerGiftChildFemale", /* Girl's toys. */
 		"HairColorList",                                 /* Hair colors. */
-		"AtrFrgSigilStoneRecipeList",                    /* Atronach Forge recipes. */
-		"AtrFrgSigilStoneResultList",                    /* Atronach Forge results. */
+		"AtrFrgAtronachForgeRecipeList",                 /* Atronach Forge recipes. */
+		"AtrFrgAtronachForgeResultList",                 /* Atronach Forge results. */
+		"AtrFrgSigilStoneRecipeList",                    /* Atronach Forge with Sigil Stone recipes. */
+		"AtrFrgSigilStoneResultList",                    /* Atronach Forge with Sigil Stone results. */
 	};                                                   /* EditorIDs for FormLists used in simplified entries. */
 }

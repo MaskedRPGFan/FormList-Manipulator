@@ -16,6 +16,7 @@ namespace flm::EntryType
 		GTOYS,     /* Girl's toys. */
 		HAIRC,     /* Hair colors. */
 		AFORG,     /* Atronach forge. */
+		AFRGS,     /* Atronach forge with Sigil Stone. */
 
 		ALL /* Amount of Entry types. */
 	};
