@@ -1,16 +1,11 @@
 #pragma once
 
-#include "LogInfo.hpp"
 #include "MergeMapperPluginAPI.h"
-#include "OperatingMode.hpp"
+#include "Utility/LogInfo.hpp"
+#include "Utility/Types/Types.hpp"
 
 namespace flm
 {
-	using ParseEntryCallback = std::function<bool(const std::string&)>;          /* Pointer to the function that parses the entry. */
-	using FormListsData = std::map<RE::BGSListForm*, std::vector<RE::TESForm*>>; /* Data for mod events. */
-	using ModEvents = std::unordered_map<std::string, FormListsData>;            /* Mod events type. */
-	using FormPair = std::pair<RE::TESForm*, RE::TESForm*>;                      /* Pair of Forms*. */
-
 	/**
 	 * \brief Returns a poniter to Form based on mod name and record FromID.
 	 * \param pluginName    - Name of the mod with extension.
@@ -19,7 +14,7 @@ namespace flm
 	 */
 	inline RE::TESForm* GetTesForm(const std::string& pluginName, const std::uint32_t rawFormId)
 	{
-		const auto data_handler = RE::TESDataHandler::GetSingleton();
+		static const auto data_handler = RE::TESDataHandler::GetSingleton();
 		return data_handler ? data_handler->LookupForm(rawFormId, pluginName) : nullptr;
 	}
 
@@ -27,11 +22,10 @@ namespace flm
 	 * \brief Returns a poniter to Form based on string.
 	 * \param string        - String in the format RecordID~ModName or EditorID.
 	 * The mod name must have extension. ~ and ModName can be omitted for base game plugins. RecordID can have a maximum of 8 characters.
-	 * \param debug         - Debug mode that prints out additional information. Default: disabled.
 	 * \return              - FormList pointer or nullptr if not found.
 	 */
 	template<typename T = RE::TESForm>
-	inline T* FindForm(const std::string& string, bool debug = false)
+	inline T* FindForm(const std::string& string)
 	{
 		if(string.find("~"sv) != std::string::npos)
 		{
@@ -52,7 +46,7 @@ namespace flm
 				return f->As<T>();
 			else
 			{
-				if(debug)
+				if(log::operating_mode == OperatingMode::INITIALIZE && log::debug_mode)
 					log::Error("Can't find Form with FormID {:X} from plugin {}.", form_id, plugin);
 				return nullptr;
 			}
@@ -62,14 +56,14 @@ namespace flm
 				return f->As<T>();
 			else
 			{
-				if(debug)
+				if(log::operating_mode == OperatingMode::INITIALIZE && log::debug_mode)
 					log::Error("Can't find Form with FormID {}.", string);
 				return nullptr;
 			}
 		if(const auto f = RE::TESForm::LookupByEditorID(string))
 			return f->As<T>();
 
-		if(debug)
+		if(log::operating_mode == OperatingMode::INITIALIZE && log::debug_mode)
 			log::Error("Can't find Form with EditorID {}.", string);
 		return nullptr;
 	}
@@ -130,15 +124,13 @@ namespace flm
 	/**
 	 * \brief Adds correct generic entries with forms to the game.
 	 * \param data              - A map containing FromLists with their corresponding Forms.
-	 * \param mode              - Current Operating Mode.
-	 * \param debug             - Debug mode that prints out additional information. Default: disabled.
 	 */
-	inline std::pair<int, int> AddGeneric(FormListsData& data, const OperatingMode::OperatingMode mode, bool debug = false)
+	inline std::pair<int, int> AddGeneric(FormListsData& data)
 	{
-		if(mode == OperatingMode::INITIALIZE)
+		if(log::operating_mode == OperatingMode::INITIALIZE)
 		{
 			log::Header("FORMLISTS"sv);
-			log::level++;
+			log::indent_level++;
 		}
 
 		int total_duplicates = 0;
@@ -149,14 +141,17 @@ namespace flm
 			int duplicates = 0;
 			int added = 0;
 			RE::BGSListForm* fl = form_list;
-			if(mode == OperatingMode::INITIALIZE)
-				log::Info("FormList \"{}\" [{:X}]", fl->GetName(), fl->formID);
-			log::level++;
+			if(log::operating_mode == OperatingMode::INITIALIZE)
+			{
+				log::Info("FormList {} \"{}\" [{:X}]", GetEditorId(fl), fl->GetName(), fl->formID);
+				log::indent_level++;
+			}
+
 			for(const auto& f : forms)
 			{
 				if(fl->HasForm(f))
 				{
-					if(mode == OperatingMode::INITIALIZE)
+					if(log::operating_mode == OperatingMode::INITIALIZE && log::debug_mode)
 						log::DuplicateWarn("Form"sv, f);
 					duplicates++;
 					continue;
@@ -165,24 +160,24 @@ namespace flm
 				{
 					fl->AddForm(f);
 					added++;
-					if(debug)
+					if(log::debug_mode && log::operating_mode == OperatingMode::INITIALIZE)
 						log::Added("Form", f);
 				}
 			}
 
-			if(mode == OperatingMode::INITIALIZE)
+			if(log::operating_mode == OperatingMode::INITIALIZE)
 			{
 				log::Info("{} new Forms added, skipped {} duplicates.", added, duplicates);
-				log::level--;
+				log::indent_level--;
 			}
 
 			total_added += added;
 			total_duplicates += duplicates;
 		}
 
-		if(mode == OperatingMode::INITIALIZE)
+		if(log::operating_mode == OperatingMode::INITIALIZE)
 		{
-			log::level--;
+			log::indent_level--;
 			log::Info("Total {} new Forms added to {} FormLists, skipped {} duplicates.", total_added, data.size(), total_duplicates);
 			log::Header();
 		}

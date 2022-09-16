@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22)
 
 project(
     FormListManipulator
-    VERSION 1.3.2
+    VERSION 1.4.0
     LANGUAGES CXX
     DESCRIPTION "Allows dynamic modification of FormLists."
 )

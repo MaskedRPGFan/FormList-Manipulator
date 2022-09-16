@@ -17,6 +17,7 @@ namespace flm::EntryType
 		HAIRC,     /* Hair colors. */
 		AFORG,     /* Atronach forge. */
 		AFRGS,     /* Atronach forge with Sigil Stone. */
+		DSCRF,     /* Dragonborn Spider Crafting. */
 
 		ALL /* Amount of Entry types. */
 	};

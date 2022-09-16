@@ -74,7 +74,7 @@ where,
 
 ## Simplified usage for Atronach Forge:
 
-```AronachForge = Form|Form```
+```AtronachForge = Form|Form```
 
 where,
 * first form is for Recipe,
@@ -82,7 +82,7 @@ where,
 
 ## Simplified usage for Atronach Forge with Sigil Stone:
 
-```AronachForgeSigil = Form|Form```
+```AtronachForgeSigil = Form|Form```
 
 where,
 * first form is for Recipe,

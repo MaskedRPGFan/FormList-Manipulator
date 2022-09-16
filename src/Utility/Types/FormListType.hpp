@@ -16,6 +16,8 @@ namespace flm::FormListType
 		AFRES,    /* Atronach forge result. */
 		ASFRC,    /* Atronach forge with Sigil Stone recipe. */
 		ASFRS,    /* Atronach forge with Sigil Stone result. */
+		DSREC,    /* Dragonborn Spider Crafting recipe. */
+		DSRES,    /* Dragonborn Spider Crafting result. */
 
 		ALL /* Amount of FormList types. */
 	};
@@ -30,5 +32,7 @@ namespace flm::FormListType
 		"AtrFrgAtronachForgeResultList",                 /* Atronach Forge results. */
 		"AtrFrgSigilStoneRecipeList",                    /* Atronach Forge with Sigil Stone recipes. */
 		"AtrFrgSigilStoneResultList",                    /* Atronach Forge with Sigil Stone results. */
+		"DLC2ExpSpiderCraftingRecipesList",              /* Dragonborn Spider Crafting recipes. */
+		"DLC2ExpSpiderCraftingResultsList",              /* Dragonborn Spider Crafting results. */
 	};                                                   /* EditorIDs for FormLists used in simplified entries. */
 }

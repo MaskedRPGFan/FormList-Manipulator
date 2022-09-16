@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Utility.hpp"
+#include "Utility/Utility.hpp"
 
 namespace flm
 {
@@ -22,10 +22,10 @@ namespace flm
 		protected:
 			/**
 			 * \brief Processes received signals from mods.
-			 * \param a_event               - Received signal.
+			 * \param aEvent               - Received signal.
 			 * \return                      - Status of further handling of the event: continue or stop. Always continue.
 			 */
-			RE::BSEventNotifyControl ProcessEvent(const SKSE::ModCallbackEvent* a_event, RE::BSTEventSource<SKSE::ModCallbackEvent>*) override;
+			RE::BSEventNotifyControl ProcessEvent(const SKSE::ModCallbackEvent* aEvent, RE::BSTEventSource<SKSE::ModCallbackEvent>*) override;
 
 		private:
 			ModEvents mod_events_; /* All valid Forms with ModEvents. */
@@ -36,12 +36,12 @@ namespace flm
 			EventManager& operator=(EventManager&&) = delete;
 	};
 
-	inline RE::BSEventNotifyControl EventManager::ProcessEvent(const SKSE::ModCallbackEvent* a_event, RE::BSTEventSource<SKSE::ModCallbackEvent>*)
+	inline RE::BSEventNotifyControl EventManager::ProcessEvent(const SKSE::ModCallbackEvent* aEvent, RE::BSTEventSource<SKSE::ModCallbackEvent>*)
 	{
-		if(auto event_name = a_event->eventName.c_str(); a_event && mod_events_.contains(event_name))
+		if(auto event_name = aEvent->eventName.c_str(); aEvent && mod_events_.contains(event_name))
 		{
-			logger::info("Got event: {}, strArg: {}, numArg: {}.", event_name, a_event->strArg, a_event->numArg);
-			auto [added, duplicates] = AddGeneric(mod_events_[event_name], OperatingMode::INITIALIZE);
+			logger::info("Got event: {}, strArg: {}, numArg: {}.", event_name, aEvent->strArg, aEvent->numArg);
+			auto [added, duplicates] = AddGeneric(mod_events_[event_name]);
 
 			const auto sent_event_name = fmt::format("{}OK", event_name);
 			const SKSE::ModCallbackEvent mod_event{

@@ -2,66 +2,52 @@
 #include <SimpleIni.h>
 #include <xbyak/xbyak.h>
 
-#include "RegisterFuncs.hpp"
+#include "Manipulator/RegisterFuncs.hpp"
 #include "MergeMapperPluginAPI.h"
 
 namespace
 {
-	/**
-	 * \brief Initialize logging for plugin.
-	 */
-	void InitializeLog()
-	{
-		auto path = logger::log_directory();
-		if(!path)
-			util::report_and_fail("Failed to find standard logging directory"sv);
-
-		*path /= fmt::format("{}.log"sv, Plugin::NAME);
-		auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true);
-		constexpr const auto level = spdlog::level::info;
-
-		auto log = std::make_shared<spdlog::logger>("global log"s, std::move(sink));
-		log->set_level(level);
-		log->flush_on(level);
-
-		spdlog::set_default_logger(std::move(log));
-		// spdlog::set_pattern("[%=17!s::%=17!!:%3#]: [%^%=7l%$] %v"s);
-		spdlog::set_pattern("[%Y-%m-%d %H-%M-%S.%e] [%^%=7l%$] %v"s);
-	}
-
 	/**
 	 * \brief Sink to capture SKSE events.
 	 * \param event - Submitted event.
 	 */
 	void OnEvent(SKSE::MessagingInterface::Message* event)
 	{
-		if (event->type == SKSE::MessagingInterface::kPostPostLoad) {
-			MergeMapperPluginAPI::GetMergeMapperInterface001();
-			if (g_mergeMapperInterface) {
-				const auto version = g_mergeMapperInterface->GetBuildNumber();
-				logger::info("Got MergeMapper interface buildnumber {}", version);
-			}
-			else
-				logger::info("MergeMapper not detected");
-		}
+
 		// After all the ESM/ESL/ESP plugins are loaded.
 		if(event->type == SKSE::MessagingInterface::kDataLoaded)
 		{
 			flm::manipulator.FindAll();
 			flm::manipulator.AddAll();
-			flm::manipulator.Summary();
+		}
+		// When Skyrim starts, SKSE will begin by querying for SKSE plugins and then calling each plugin's SKSEPlugin_Load function.
+		// Once all load functions are called this message is sent.
+		else if(event->type == SKSE::MessagingInterface::kPostLoad)
+		{
+			flm::CheckPo3Tweaks();
 		}
 		// The user has started a new game by selecting New Game at the main menu.
 		else if(event->type == SKSE::MessagingInterface::kNewGame)
 		{
-			flm::manipulator.SetNewGameMode();
+			flm::log::SetNewGameMode();
 			flm::manipulator.AddAll();
 		}
 		// The user has loaded a saved game.
 		else if(event->type == SKSE::MessagingInterface::kPostLoadGame)
 		{
-			flm::manipulator.SetLoadGameMode();
+			flm::log::SetLoadGameMode();
 			flm::manipulator.AddAll();
+		}
+		// Once all kPostLoad handlers have run, it will signal kPostPostLoad.
+		else if(event->type == SKSE::MessagingInterface::kPostPostLoad)
+		{
+			if(MergeMapperPluginAPI::GetMergeMapperInterface001())
+			{
+				const auto version = g_mergeMapperInterface->GetBuildNumber();
+				logger::info("Got MergeMapper interface buildnumber {}", version);
+			}
+			else
+				logger::info("MergeMapper not detected");
 		}
 	}
 
@@ -121,7 +107,7 @@ extern "C" [[maybe_unused]] DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::
  */
 extern "C" [[maybe_unused]] DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* skse)
 {
-	InitializeLog();
+	flm::log::InitializeLog();
 	logger::info("{} v{}"sv, Plugin::NAME, Plugin::VERSION.string());
 	logger::info("Runtime: {}"sv, GetRuntimeString());
 
