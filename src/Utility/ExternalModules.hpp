@@ -30,11 +30,7 @@ namespace flm
 	 */
 	inline std::string GetEditorId(const RE::TESForm* form)
 	{
-		static auto function = reinterpret_cast<const char* (*)(std::uint32_t)>(GetProcAddress(tweaks, "GetFormEditorID"));
-		if(function && form)
-			return function(form->formID);
-
-		return std::string();
+		return GetEditorId(form->formID);
 	}
 
 	/**

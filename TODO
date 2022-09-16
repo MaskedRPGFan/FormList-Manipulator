@@ -5,5 +5,6 @@
 ✔ Simplified use for hair colors. @done(22-09-06 17:59)
 ✔ Simplified use for atronach forge. @done(22-09-06 17:59)
 ☐ Filters.
+☐ Extended debug mode - Full FromList information for FormsLists included in FormListManipulator_DEBUG.ini.
 ✔ Handling of events sent by other mods. @done(22-09-06 17:59)
 ✔ Different structure for printing out information (due to update 1.2.1). @done(22-09-06 17:59)
