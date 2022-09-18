@@ -1080,7 +1080,7 @@ namespace flm
 			}
 		}
 		else
-			meet_criteria = EvaluateFilter(filter);
+			meet_criteria = EvaluateFilter(SanitizeFilter(filter));
 
 		if(meet_criteria == 1)
 		{

@@ -121,7 +121,7 @@ namespace flm
 		std::string sanitized = string;
 
 		// strip spaces between " & "
-		static const boost::regex re_bar(R"(\s*\&\s*)", boost::regex_constants::optimize);
+		static const boost::regex re_bar(R"(\s*&\s*)", boost::regex_constants::optimize);
 		sanitized = regex_replace(sanitized, re_bar, "&");
 
 		// strip spaces between " , "
