@@ -9,16 +9,19 @@ namespace flm::InfoType
 	{
 		CONFIGS_V = 0, /* How many valid configs is. */
 		CONFIGS_IN,    /* How many invalid configs is. */
-		ENTRIES_V,     /* How many valid entries is. */
-		ENTRIES_IN,    /* How many invalid entries is. */
 
-		ALIASES,     /* Total amount of found Aliases. */
+		ENTRIES_V,  /* How many valid entries is. */
+		ENTRIES_IN, /* How many invalid entries is. */
+		ENTRIES_FO, /* How many entries did not meet the filter criterion. */
+
 		ALIASES_DUP, /* Total amount of Aliases duplicates. */
 		ALIASES_NE,  /* How many invalid aliases is. */
 
-		GROUPS,     /* Total amount of found Groups. */
 		GROUPS_DUP, /* Total amount of Groups duplicates. */
 		GROUPS_NE,  /* How many in invalid aliases is. */
+
+		FILTERS_DUP, /* Total amount of Filters duplicates. */
+		FILTERS_NE,  /* How many in invalid Filters is. */
 
 		FLIST_MIS, /* How many missing FormLists is. */
 
@@ -31,11 +34,11 @@ namespace flm::InfoType
 		PLANTS_ADD, /* Total amount of added Plants. */
 		PLANTS_DUP, /* Total amount of Plants duplicates. */
 
-		B_TOYS,       /* Total amount of added boy's toys. */
-		BOY_TOYS_DUP, /* Total amount of boy's toys duplicates. */
+		B_TOYS,     /* Total amount of added boy's toys. */
+		B_TOYS_DUP, /* Total amount of boy's toys duplicates. */
 
-		G_TOYS,        /* Total amount of added girl's toys. */
-		GIRL_TOYS_DUP, /* Total amount of girl's toys duplicates. */
+		G_TOYS,     /* Total amount of added girl's toys. */
+		G_TOYS_DUP, /* Total amount of girl's toys duplicates. */
 
 		HAIRC,     /* Total amount of added hair colors. */
 		HAIRC_DUP, /* Total amount of hair colors duplicates. */

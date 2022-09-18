@@ -9,6 +9,7 @@ namespace flm::EntryType
 	{
 		ALIAS = 0, /* Aliases for FormLists. */
 		GROUP,     /* Groups for Forms. */
+		FILTR,     /* Groups for Filters. */
 		MODEV,     /* Mod events. */
 		FLIST,     /* FromList. */
 		PLANT,     /* Plant. */

@@ -19,6 +19,17 @@ namespace flm
 	}
 
 	/**
+	 * \brief Returns a poniter to Plugin based on its name.
+	 * \param pluginName    - Name of the plugin with extension.
+	 * \return              - TESFile pointer or nullptr if not found.
+	 */
+	inline const RE::TESFile* GetTesFile(const std::string_view& pluginName)
+	{
+		static const auto data_handler = RE::TESDataHandler::GetSingleton();
+		return data_handler ? data_handler->LookupModByName(pluginName) : nullptr;
+	}
+
+	/**
 	 * \brief Returns a poniter to Form based on string.
 	 * \param string        - String in the format RecordID~ModName or EditorID.
 	 * The mod name must have extension. ~ and ModName can be omitted for base game plugins. RecordID can have a maximum of 8 characters.
@@ -69,7 +80,7 @@ namespace flm
 	}
 
 	/**
-	 * \brief Removes spaces between | and leading zeros from string. From https://github.com/powerof3/Spell-Perk-Item-Distributor.
+	 * \brief Removes spaces between | , and leading zeros from string. From https://github.com/powerof3/Spell-Perk-Item-Distributor.
 	 * \param string        - String to parse.
 	 * \return              - Sanitized string.
 	 */
@@ -97,6 +108,25 @@ namespace flm
 		static const boost::regex re_dragonborn(R"((0x0*4)([0-9a-f]{6}))", static_cast<int>(boost::regex_constants::optimize) | static_cast<int>(boost::regex::icase));
 		sanitized = regex_replace(sanitized, re_dragonborn, "0x$2~Dragonborn.esm");
 
+		return sanitized;
+	}
+
+	/**
+	 * \brief Removes spaces between & and , for Filters.
+	 * \param string        - Filter to parse.
+	 * \return              - Sanitized Filter.
+	 */
+	inline std::string SanitizeFilter(const std::string& string)
+	{
+		std::string sanitized = string;
+
+		// strip spaces between " & "
+		static const boost::regex re_bar(R"(\s*\&\s*)", boost::regex_constants::optimize);
+		sanitized = regex_replace(sanitized, re_bar, "&");
+
+		// strip spaces between " , "
+		static const boost::regex re_comma(R"(\s*,\s*)", boost::regex_constants::optimize);
+		sanitized = regex_replace(sanitized, re_comma, ",");
 		return sanitized;
 	}
 
@@ -183,5 +213,47 @@ namespace flm
 		}
 
 		return std::make_pair(total_added, total_duplicates);
+	}
+
+	/**
+	 * \brief Evaluate Filter.
+	 * \param filter                    - Filter to evaluate in format: +/-ESP[&+-ESP], +/-ESP[&+-ESP], itd.
+	 * \return                          - 1, if Filter meet criteria, 0 if invalid, -1 if did not meet criteria.
+	 */
+	inline int EvaluateFilter(const std::string& filter)
+	{
+		const auto conditions_sections = string::split(filter, ",");
+
+		for(auto& cs : conditions_sections)
+		{
+			const auto plugins = string::split(cs, "&");
+			bool result = true;
+			for(auto& plugin : plugins)
+			{
+				if(plugin[0] != '+' && plugin[0] != '-')
+				{
+					if(log::debug_mode)
+						log::Warn("Filter \"{}\" has an invalid format.", filter);
+					return 0;
+				}
+				else
+				{
+					std::string plugin_name = plugin.substr(1);
+					const auto res = GetTesFile(plugin_name);
+					if(log::debug_mode)
+						log::Info("Plugin {} status {}.", plugin_name, res ? true : false);
+
+					if(!res && plugin[0] == '+' || res && plugin[0] == '-')
+					{
+						result = false;
+						break;
+					}
+				}
+			}
+			if(result)
+				return 1;
+		}
+
+		return -1;
 	}
 }

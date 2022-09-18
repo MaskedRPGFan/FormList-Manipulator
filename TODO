@@ -4,7 +4,7 @@
 ☐ Dynamically writing and reading the state of configuration files in SKSE cosave, which will allow FormList to change dynamically (due to the 1.2.1 update).
 ✔ Simplified use for hair colors. @done(22-09-06 17:59)
 ✔ Simplified use for atronach forge. @done(22-09-06 17:59)
-☐ Filters.
+✔ Filters. @done(22-09-18 18:34)
 ☐ Extended debug mode - Full FromList information for FormsLists included in FormListManipulator_DEBUG.ini.
 ✔ Handling of events sent by other mods. @done(22-09-06 17:59)
 ✔ Different structure for printing out information (due to update 1.2.1). @done(22-09-06 17:59)

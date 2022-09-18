@@ -22,4 +22,6 @@ namespace flm
 	using InfoT = InfoType::InfoType;                                                        /* Info type. */
 	using InfoTPair = std::pair<InfoT, InfoT>;                                               /* Pair of Info types. */
 	using OMode = OperatingMode::OperatingMode;                                              /* Operating mode. */
+
+	namespace ift = InfoType; /* InfoType namespace short alias. */
 }

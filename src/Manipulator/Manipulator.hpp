@@ -28,13 +28,14 @@ namespace flm
 			EventManager& GetEventManager();
 
 		private:
-			std::array<int, InfoType::ALL> infos_; /* Store values for types of countable statistics.*/
-			FormsLists lists_;                     /* FormLists from Skyrim for use in simplified entries. */
-			EventManager event_manager_;           /* Manages sending and receiving mod events. */
+			std::array<int, ift::ALL> infos_; /* Store values for types of countable statistics.*/
+			FormsLists lists_;                /* FormLists from Skyrim for use in simplified entries. */
+			EventManager event_manager_;      /* Manages sending and receiving mod events. */
 
 			const std::array<ParseEntryCallback, EntryType::ALL> add_callbacks_{
 				std::bind(&Manipulator::parseAlias, this, std::placeholders::_1),                    /* Aliases for FormLists. */
 				std::bind(&Manipulator::parseGroup, this, std::placeholders::_1),                    /* Groups for Forms. */
+				std::bind(&Manipulator::parseFilter, this, std::placeholders::_1),                   /* Filters for Entires. */
 				std::bind(&Manipulator::parseModEvent, this, std::placeholders::_1),                 /* Mod events. */
 				std::bind(&Manipulator::parseFormList, this, std::placeholders::_1),                 /* FromList. */
 				std::bind(&Manipulator::parsePlant, this, std::placeholders::_1),                    /* Plant. */
@@ -48,6 +49,7 @@ namespace flm
 
 			std::map<std::string, FormsLists> aliases_; /* All valid Aliases. */
 			std::map<std::string, Forms> groups_;       /* All valid Groups. */
+			std::map<std::string, bool> filters_;       /* All valid Filters. */
 			FormListsData form_lists_;                  /* All valid Forms for FormLists. */
 			std::vector<FormPair> plants_;              /* All valid Forms with seeds and plants. */
 			Forms boy_toys_;                            /* All valid Forms with boy's toys. */
@@ -79,11 +81,9 @@ namespace flm
 			 * \param key                   - Key to check.
 			 * \param entry                 - Entry to parse.
 			 * \param type                  - Entry type.
-			 * \param valid                 - A variable that stores the number of valid entries.
-			 * \param invalid               - A variable that stores the number of invalid entries.
 			 * \return                      - True if the key is valid.
 			 */
-			bool addIfKeyIs(const std::string& key, const std::string& entry, EntryType::EntryType type, int& valid, int& invalid);
+			bool addIfKeyIs(const std::string& key, const std::string& entry, EntryType::EntryType type);
 			/**
 			 * \brief Adds the correct plants to the game.
 			 */
@@ -164,6 +164,12 @@ namespace flm
 			 */
 			bool parseGroup(const std::string& entry);
 			/**
+			 * \brief Adds Filter to internal structure based on string entry. String is validated.
+			 * \param entry                     - String in the format NameFilter|+/-Plugin, +/-Plugin, etc.
+			 * \return                          - True, if everything went fine.
+			 */
+			bool parseFilter(const std::string& entry);
+			/**
 			 * \brief Adds ModEvent to internal structure based on string entry. String is validated.
 			 * \param entry                     - String in the format FList|Form, Form, #Group, etc.
 			 * \return                          - True, if everything went fine.
@@ -224,6 +230,12 @@ namespace flm
 			 * \return                          - True, if everything went fine.
 			 */
 			bool addFormToFormList(RE::BGSListForm*& list, RE::TESForm* form) const;
+			/**
+			 * \brief Evaluate Filter.
+			 * \param filter                    - Filter to evaluate in format: #FilterName or +/-ESP[&+-ESP], +/-ESP[&+-ESP], itd.
+			 * \return                          - 1, if Filter meet criteria, 0 if invalid, -1 if did not meet criteria.
+			 */
+			inline int evaluateFilter(const std::string& filter);
 	};
 
 	inline Manipulator::Manipulator()
@@ -246,36 +258,36 @@ namespace flm
 		addAtronachForgeRecipes();
 		addAtronachForgeSigilRecipes();
 		auto [added, duplicates] = AddGeneric(form_lists_);
-		infos_[InfoType::FORMS_ADD] += added;
-		infos_[InfoType::FORMS_DUP] += duplicates;
+		infos_[ift::FORMS_ADD] += added;
+		infos_[ift::FORMS_DUP] += duplicates;
 		summary();
 	}
 
 	inline void Manipulator::clearDataInfo()
 	{
-		infos_[InfoType::FORMS_ADD] = 0;
-		infos_[InfoType::FORMS_DUP] = 0;
+		infos_[ift::FORMS_ADD] = 0;
+		infos_[ift::FORMS_DUP] = 0;
 
-		infos_[InfoType::PLANTS_ADD] = 0;
-		infos_[InfoType::PLANTS_DUP] = 0;
+		infos_[ift::PLANTS_ADD] = 0;
+		infos_[ift::PLANTS_DUP] = 0;
 
-		infos_[InfoType::B_TOYS] = 0;
-		infos_[InfoType::BOY_TOYS_DUP] = 0;
+		infos_[ift::B_TOYS] = 0;
+		infos_[ift::B_TOYS_DUP] = 0;
 
-		infos_[InfoType::G_TOYS] = 0;
-		infos_[InfoType::GIRL_TOYS_DUP] = 0;
+		infos_[ift::G_TOYS] = 0;
+		infos_[ift::G_TOYS_DUP] = 0;
 
-		infos_[InfoType::HAIRC] = 0;
-		infos_[InfoType::HAIRC_DUP] = 0;
+		infos_[ift::HAIRC] = 0;
+		infos_[ift::HAIRC_DUP] = 0;
 
-		infos_[InfoType::AFORG_ADD] = 0;
-		infos_[InfoType::AFORG_DUP] = 0;
+		infos_[ift::AFORG_ADD] = 0;
+		infos_[ift::AFORG_DUP] = 0;
 
-		infos_[InfoType::ASFRG_ADD] = 0;
-		infos_[InfoType::ASFRG_DUP] = 0;
+		infos_[ift::ASFRG_ADD] = 0;
+		infos_[ift::ASFRG_DUP] = 0;
 
-		infos_[InfoType::DSREC_ADD] = 0;
-		infos_[InfoType::DSREC_DUP] = 0;
+		infos_[ift::DSREC_ADD] = 0;
+		infos_[ift::DSREC_DUP] = 0;
 	}
 
 	inline void Manipulator::findLists()
@@ -332,19 +344,20 @@ namespace flm
 			if(const auto rc = ini.LoadFile(path.c_str()); rc < 0)
 			{
 				log::Error("Can't read ini {}.", path);
-				infos_[InfoType::CONFIGS_IN]++;
+				infos_[ift::CONFIGS_IN]++;
 				continue;
 			}
 
-			infos_[InfoType::CONFIGS_V]++;
+			infos_[ift::CONFIGS_V]++;
 
 			log::Info("Processing {}...", path);
 			log::indent_level++;
 
 			if(auto values = ini.GetSection(""); values)
 			{
-				int valid_entries = 0;   /* How many valid entries is. */
-				int invalid_entries = 0; /* How many invalid entries is. */
+				int valid_entries = infos_[ift::ENTRIES_V];    /* How many valid entries is. */
+				int invalid_entries = infos_[ift::ENTRIES_IN]; /* How many invalid entries is. */
+				int filtered_out = infos_[ift::ENTRIES_FO];    /* How many entries did not meet criteria. */
 
 				// Parse Aliases and Groups first.
 				for(auto& [key, entry] : *values)
@@ -353,10 +366,13 @@ namespace flm
 					std::string lowercase_key = key.pItem;
 					ToLower(lowercase_key);
 
-					if(addIfKeyIs(lowercase_key, sanitized_entry, EntryType::ALIAS, valid_entries, invalid_entries))
+					if(addIfKeyIs(lowercase_key, sanitized_entry, EntryType::ALIAS))
 						continue;
 
-					if(addIfKeyIs(lowercase_key, sanitized_entry, EntryType::GROUP, valid_entries, invalid_entries))
+					if(addIfKeyIs(lowercase_key, sanitized_entry, EntryType::GROUP))
+						continue;
+
+					if(addIfKeyIs(lowercase_key, sanitized_entry, EntryType::FILTR))
 						continue;
 				}
 
@@ -373,14 +389,14 @@ namespace flm
 						continue;
 					}
 
-					for(int type = 2; type != EntryType::ALL; type++)
-						if(addIfKeyIs(lowercase_key, sanitized_entry, static_cast<EntryType::EntryType>(type), valid_entries, invalid_entries))
+					for(int type = EntryType::MODEV; type != EntryType::ALL; type++)
+						if(addIfKeyIs(lowercase_key, sanitized_entry, static_cast<EntryType::EntryType>(type)))
 							break;
 				}
-
-				log::Info("Finished, {} valid entries found, {} invalid.", valid_entries, invalid_entries);
-				infos_[InfoType::ENTRIES_V] += valid_entries;
-				infos_[InfoType::ENTRIES_IN] += invalid_entries;
+				valid_entries = infos_[ift::ENTRIES_V] - valid_entries;
+				invalid_entries = infos_[ift::ENTRIES_IN] - invalid_entries;
+				filtered_out = infos_[ift::ENTRIES_FO] - filtered_out;
+				log::Info("Finished, {} valid entries found, {} invalid, {} filtered out.", valid_entries, invalid_entries, filtered_out);
 			}
 			else
 				log::Info("Config file is empty.");
@@ -388,15 +404,16 @@ namespace flm
 			log::indent_level--;
 		}
 		log::indent_level--;
-		log::Info("Reading configs complete, {} valid configs found, {} invalid. {} valid entries found, {} invalid.",
-				  infos_[InfoType::CONFIGS_V],
-				  infos_[InfoType::CONFIGS_IN],
-				  infos_[InfoType::ENTRIES_V],
-				  infos_[InfoType::ENTRIES_IN]);
+		log::Info("Reading configs complete, {} valid configs found, {} invalid. {} valid entries found, {} invalid, {} filtered out.",
+				  infos_[ift::CONFIGS_V],
+				  infos_[ift::CONFIGS_IN],
+				  infos_[ift::ENTRIES_V],
+				  infos_[ift::ENTRIES_IN],
+				  infos_[ift::ENTRIES_FO]);
 		log::Header();
 	}
 
-	inline bool Manipulator::addIfKeyIs(const std::string& key, const std::string& entry, const EntryType::EntryType type, int& valid, int& invalid)
+	inline bool Manipulator::addIfKeyIs(const std::string& key, const std::string& entry, const EntryType::EntryType type)
 	{
 		if(key == keywords[type])
 		{
@@ -407,18 +424,16 @@ namespace flm
 			}
 			if((add_callbacks_[type])(entry))
 			{
-				infos_[InfoType::ENTRIES_V]++;
+				infos_[ift::ENTRIES_V]++;
 				if(log::debug_mode)
 					log::indent_level--;
-				valid++;
 				return true;
 			}
 			else
 			{
-				infos_[InfoType::ENTRIES_IN]++;
+				infos_[ift::ENTRIES_IN]++;
 				if(log::debug_mode)
 					log::indent_level--;
-				invalid++;
 				return true;
 			}
 		}
@@ -427,33 +442,33 @@ namespace flm
 
 	inline void Manipulator::addPlants()
 	{
-		addFormPair("PLANTS"sv, std::make_pair("Seed"sv, "Plant"sv), plants_, std::make_pair(FormListType::SEED, FormListType::PLANT), std::make_pair(InfoType::PLANTS_ADD, InfoType::PLANTS_DUP));
+		addFormPair("PLANTS"sv, std::make_pair("Seed"sv, "Plant"sv), plants_, std::make_pair(FormListType::SEED, FormListType::PLANT), std::make_pair(ift::PLANTS_ADD, ift::PLANTS_DUP));
 	}
 
 	inline void Manipulator::addKidsToys()
 	{
-		addForms("BOY'S TOYS"sv, "Boy's Toy"sv, boy_toys_, FormListType::BTOYS, std::make_pair(InfoType::B_TOYS, InfoType::BOY_TOYS_DUP));
-		addForms("GIRL'S TOYS"sv, "Girls's Toy"sv, girl_toys_, FormListType::GTOYS, std::make_pair(InfoType::G_TOYS, InfoType::GIRL_TOYS_DUP));
+		addForms("BOY'S TOYS"sv, "Boy's Toy"sv, boy_toys_, FormListType::BTOYS, std::make_pair(ift::B_TOYS, ift::B_TOYS_DUP));
+		addForms("GIRL'S TOYS"sv, "Girls's Toy"sv, girl_toys_, FormListType::GTOYS, std::make_pair(ift::G_TOYS, ift::G_TOYS_DUP));
 	}
 
 	inline void Manipulator::addHairColors()
 	{
-		addForms("HAIR COLORS"sv, "Hair Color"sv, hair_colors_, FormListType::HAIRC, std::make_pair(InfoType::HAIRC, InfoType::HAIRC_DUP));
+		addForms("HAIR COLORS"sv, "Hair Color"sv, hair_colors_, FormListType::HAIRC, std::make_pair(ift::HAIRC, ift::HAIRC_DUP));
 	}
 
 	inline void Manipulator::addAtronachForgeRecipes()
 	{
-		addFormPair("ATRONACH FORGE"sv, std::make_pair("Recipe"sv, "Result"sv), atronach_forge_, std::make_pair(FormListType::AFREC, FormListType::AFRES), std::make_pair(InfoType::AFORG_ADD, InfoType::AFORG_DUP));
+		addFormPair("ATRONACH FORGE"sv, std::make_pair("Recipe"sv, "Result"sv), atronach_forge_, std::make_pair(FormListType::AFREC, FormListType::AFRES), std::make_pair(ift::AFORG_ADD, ift::AFORG_DUP));
 	}
 
 	inline void Manipulator::addAtronachForgeSigilRecipes()
 	{
-		addFormPair("ATRONACH FORGE WITH SIGIL STONE"sv, std::make_pair("Recipe"sv, "Result"sv), atronach_sigil_forge_, std::make_pair(FormListType::ASFRC, FormListType::ASFRS), std::make_pair(InfoType::ASFRG_ADD, InfoType::ASFRG_DUP));
+		addFormPair("ATRONACH FORGE WITH SIGIL STONE"sv, std::make_pair("Recipe"sv, "Result"sv), atronach_sigil_forge_, std::make_pair(FormListType::ASFRC, FormListType::ASFRS), std::make_pair(ift::ASFRG_ADD, ift::ASFRG_DUP));
 	}
 
 	inline void Manipulator::addDragonbornSpiderCrafting()
 	{
-		addFormPair("DRAGONBORN SPIDER CRAFTING"sv, std::make_pair("Recipe"sv, "Result"sv), dragon_spider_crafting_, std::make_pair(FormListType::DSREC, FormListType::DSRES), std::make_pair(InfoType::DSREC_ADD, InfoType::DSREC_DUP));
+		addFormPair("DRAGONBORN SPIDER CRAFTING"sv, std::make_pair("Recipe"sv, "Result"sv), dragon_spider_crafting_, std::make_pair(FormListType::DSREC, FormListType::DSRES), std::make_pair(ift::DSREC_ADD, ift::DSREC_DUP));
 	}
 
 	inline void Manipulator::addForms(const std::string_view& header, const std::string_view& name, const Forms& forms, const Flt formType, const InfoTPair infos)
@@ -529,42 +544,44 @@ namespace flm
 
 	inline void Manipulator::summary()
 	{
-		const int total_added_forms = infos_[InfoType::FORMS_ADD] +
-									  infos_[InfoType::PLANTS_ADD] +
-									  infos_[InfoType::B_TOYS] +
-									  infos_[InfoType::G_TOYS] +
-									  infos_[InfoType::HAIRC] +
-									  infos_[InfoType::AFORG_ADD] +
-									  infos_[InfoType::ASFRG_ADD] +
-									  infos_[InfoType::DSREC_ADD];
-		const int total_dup_forms = infos_[InfoType::FORMS_DUP] +
-									infos_[InfoType::PLANTS_DUP] +
-									infos_[InfoType::BOY_TOYS_DUP] +
-									infos_[InfoType::GIRL_TOYS_DUP] +
-									infos_[InfoType::HAIRC_DUP] +
-									infos_[InfoType::AFORG_DUP] +
-									infos_[InfoType::ASFRG_DUP] +
-									infos_[InfoType::DSREC_DUP];
+		const int total_added_forms = infos_[ift::FORMS_ADD] +
+									  infos_[ift::PLANTS_ADD] +
+									  infos_[ift::B_TOYS] +
+									  infos_[ift::G_TOYS] +
+									  infos_[ift::HAIRC] +
+									  infos_[ift::AFORG_ADD] +
+									  infos_[ift::ASFRG_ADD] +
+									  infos_[ift::DSREC_ADD];
+		const int total_dup_forms = infos_[ift::FORMS_DUP] +
+									infos_[ift::PLANTS_DUP] +
+									infos_[ift::B_TOYS_DUP] +
+									infos_[ift::G_TOYS_DUP] +
+									infos_[ift::HAIRC_DUP] +
+									infos_[ift::AFORG_DUP] +
+									infos_[ift::ASFRG_DUP] +
+									infos_[ift::DSREC_DUP];
 		if(log::operating_mode == OperatingMode::INITIALIZE)
 		{
 			log::Header("SUMMARY"sv);
-			log::Info("{} valid configs, {} invalid. {} total entries, {} valid, {} invalid.",
-					  infos_[InfoType::CONFIGS_V],
-					  infos_[InfoType::CONFIGS_IN],
-					  infos_[InfoType::ENTRIES_V] + infos_[InfoType::ENTRIES_IN],
-					  infos_[InfoType::ENTRIES_V],
-					  infos_[InfoType::ENTRIES_IN]);
+			log::Info("{} valid configs, {} invalid. {} total entries, {} valid, {} invalid, {} filtered out.",
+					  infos_[ift::CONFIGS_V],
+					  infos_[ift::CONFIGS_IN],
+					  infos_[ift::ENTRIES_V] + infos_[ift::ENTRIES_IN],
+					  infos_[ift::ENTRIES_V],
+					  infos_[ift::ENTRIES_IN],
+					  infos_[ift::ENTRIES_FO]);
 			log::Info("{} FormLists, {} valid, {} invalid. {} total Forms, {} unique, {} missing, {} duplicates.",
-					  form_lists_.size() + infos_[InfoType::FLIST_MIS],
+					  form_lists_.size() + infos_[ift::FLIST_MIS],
 					  form_lists_.size(),
-					  infos_[InfoType::FLIST_MIS],
-					  infos_[InfoType::FORMS] + infos_[InfoType::FORMS_MISS],
-					  infos_[InfoType::FORMS] - total_dup_forms,
-					  infos_[InfoType::FORMS_MISS],
+					  infos_[ift::FLIST_MIS],
+					  infos_[ift::FORMS] + infos_[ift::FORMS_MISS],
+					  infos_[ift::FORMS] - total_dup_forms,
+					  infos_[ift::FORMS_MISS],
 					  total_dup_forms);
-			log::Info("{} FromLists Aliases added, {} duplicates, {} not existing.", aliases_.size(), infos_[InfoType::ALIASES_DUP], infos_[InfoType::ALIASES_NE]);
-			log::Info("{} Forms Groups added, {} duplicates, {} not existing.", groups_.size(), infos_[InfoType::GROUPS_DUP], infos_[InfoType::GROUPS_NE]);
-			log::Info("{} new Mod Events added, skipped {} invalid.", infos_[InfoType::MODEV], infos_[InfoType::MODEV_INV]);
+			log::Info("{} FromLists Aliases added, {} duplicates, {} not existing.", aliases_.size(), infos_[ift::ALIASES_DUP], infos_[ift::ALIASES_NE]);
+			log::Info("{} Forms Groups added, {} duplicates, {} not existing/invalid.", groups_.size(), infos_[ift::GROUPS_DUP], infos_[ift::GROUPS_NE]);
+			log::Info("{} Filters added, {} duplicates, {} not existing/invalid.", filters_.size(), infos_[ift::FILTERS_DUP], infos_[ift::FILTERS_NE]);
+			log::Info("{} new Mod Events added, skipped {} invalid.", infos_[ift::MODEV], infos_[ift::MODEV_INV]);
 		}
 		else if(log::operating_mode == OperatingMode::NEW_GAME)
 		{
@@ -579,14 +596,14 @@ namespace flm
 		else
 			return;
 
-		log::Info("{} new plants added, skipped {} duplicates.", infos_[InfoType::PLANTS_ADD], infos_[InfoType::PLANTS_DUP]);
-		log::Info("{} new Boy's Toys added, skipped {} duplicates.", infos_[InfoType::B_TOYS], infos_[InfoType::BOY_TOYS_DUP]);
-		log::Info("{} new Girl's Toys added, skipped {} duplicates.", infos_[InfoType::G_TOYS], infos_[InfoType::GIRL_TOYS_DUP]);
-		log::Info("{} new Hair Colors added, skipped {} duplicates.", infos_[InfoType::HAIRC], infos_[InfoType::HAIRC_DUP]);
-		log::Info("{} new Atronach Forge recipes added, skipped {} duplicates.", infos_[InfoType::AFORG_ADD], infos_[InfoType::AFORG_DUP]);
-		log::Info("{} new Atronach Forge recipes with Sigil Stone added, skipped {} duplicates.", infos_[InfoType::ASFRG_ADD], infos_[InfoType::ASFRG_DUP]);
-		log::Info("{} new Dragonborn Spider Crafting recipes added, skipped {} duplicates.", infos_[InfoType::DSREC_ADD], infos_[InfoType::DSREC_DUP]);
-		log::Info("{} new Forms added to {} FormLists, skipped {} duplicates.", infos_[InfoType::FORMS_ADD], form_lists_.size(), infos_[InfoType::FORMS_DUP]);
+		log::Info("{} new plants added, skipped {} duplicates.", infos_[ift::PLANTS_ADD], infos_[ift::PLANTS_DUP]);
+		log::Info("{} new Boy's Toys added, skipped {} duplicates.", infos_[ift::B_TOYS], infos_[ift::B_TOYS_DUP]);
+		log::Info("{} new Girl's Toys added, skipped {} duplicates.", infos_[ift::G_TOYS], infos_[ift::G_TOYS_DUP]);
+		log::Info("{} new Hair Colors added, skipped {} duplicates.", infos_[ift::HAIRC], infos_[ift::HAIRC_DUP]);
+		log::Info("{} new Atronach Forge recipes added, skipped {} duplicates.", infos_[ift::AFORG_ADD], infos_[ift::AFORG_DUP]);
+		log::Info("{} new Atronach Forge recipes with Sigil Stone added, skipped {} duplicates.", infos_[ift::ASFRG_ADD], infos_[ift::ASFRG_DUP]);
+		log::Info("{} new Dragonborn Spider Crafting recipes added, skipped {} duplicates.", infos_[ift::DSREC_ADD], infos_[ift::DSREC_DUP]);
+		log::Info("{} new Forms added to {} FormLists, skipped {} duplicates.", infos_[ift::FORMS_ADD], form_lists_.size(), infos_[ift::FORMS_DUP]);
 
 		if(log::operating_mode != OperatingMode::INITIALIZE)
 			log::Info("Total {} new Forms added, skipped {} duplicates.", total_added_forms, total_dup_forms);
@@ -602,13 +619,17 @@ namespace flm
 	inline bool Manipulator::parseFormList(const std::string& entry)
 	{
 		const auto sections = string::split(entry, "|");
-		if(sections.size() != 2)
+		if(sections.size() != 2 && sections.size() != 3)
 		{
-			log::Error("Wrong FormList format. Expected 2 sections, got {}.", sections.size());
+			log::Error("Wrong FormList format. Expected 2 or 3 sections, got {}.", sections.size());
 			return false;
 		}
 
 		bool found_destination = true;
+
+		if(sections.size() == 3)
+			if(const auto res = evaluateFilter(sections[2]); res != 1)
+				return res == 0 ? false : true;
 
 		auto form_list_info = sections[0];
 		std::vector<RE::BGSListForm*> form_lists;
@@ -621,7 +642,7 @@ namespace flm
 			else
 			{
 				log::Error("Unknown Alias: {}.", form_list_info);
-				infos_[InfoType::ALIASES_NE]++;
+				infos_[ift::ALIASES_NE]++;
 				found_destination = false;
 			}
 		}
@@ -631,7 +652,7 @@ namespace flm
 			if(!form_list)
 			{
 				log::Error("Unable to find FormList: {}.", form_list_info);
-				infos_[InfoType::FLIST_MIS]++;
+				infos_[ift::FLIST_MIS]++;
 				found_destination = false;
 			}
 			else
@@ -649,8 +670,8 @@ namespace flm
 		if(!found_destination)
 			return false;
 
-		infos_[InfoType::FORMS] += static_cast<int>(forms.size());
-		infos_[InfoType::FORMS_MISS] += missing;
+		infos_[ift::FORMS] += static_cast<int>(forms.size());
+		infos_[ift::FORMS_MISS] += missing;
 
 		for(auto& fl : form_lists)
 		{
@@ -671,7 +692,7 @@ namespace flm
 
 	inline bool Manipulator::parseBToys(const std::string& entry)
 	{
-		return parseList(entry, "Boy's Toys", girl_toys_);
+		return parseList(entry, "Boy's Toys", boy_toys_);
 	}
 
 	inline bool Manipulator::parseGToys(const std::string& entry)
@@ -693,7 +714,7 @@ namespace flm
 		if(aliases_.contains(alias_info))
 		{
 			log::Error("Alias {} exists.", alias_info);
-			infos_[InfoType::ALIASES_DUP]++;
+			infos_[ift::ALIASES_DUP]++;
 			duplicate = true;
 		}
 
@@ -748,8 +769,8 @@ namespace flm
 
 		if(groups_.contains(group_info))
 		{
-			log::Error("Group {} exists..", group_info);
-			infos_[InfoType::GROUPS_DUP]++;
+			log::Error("Group {} exists.", group_info);
+			infos_[ift::GROUPS_DUP]++;
 			duplicate = true;
 		}
 
@@ -790,13 +811,48 @@ namespace flm
 		return true;
 	}
 
+	inline bool Manipulator::parseFilter(const std::string& entry)
+	{
+		const auto sections = string::split(SanitizeFilter(entry), "|");
+		if(sections.size() != 2)
+		{
+			log::Error("Wrong Filter format. Expected 2 sections, got {}.", sections.size());
+			return false;
+		}
+
+		const std::string filter_info = sections[0];
+
+		if(filters_.contains(filter_info))
+		{
+			log::Error("Filter {} exists.", filter_info);
+			infos_[ift::FILTERS_DUP]++;
+			log::Warn("Filter {} will be omitted due to incorrect Filter name.", filter_info);
+			return false;
+		}
+
+		if(const int meet_criteria = EvaluateFilter(sections[1]); meet_criteria == 1 || meet_criteria == -1)
+		{
+			filters_.emplace(std::piecewise_construct, std::forward_as_tuple(filter_info), std::forward_as_tuple(meet_criteria == 1 ? true : false));
+			if(log::debug_mode)
+				log::Info("Filter \"{}\" added with status {}.", filter_info, meet_criteria == 1 ? true : false);
+		}
+		else
+		{
+			infos_[ift::FILTERS_NE]++;
+			log::Warn("Filter \"{}\" was omitted because it is invalid.", filter_info);
+			return false;
+		}
+
+		return true;
+	}
+
 	inline bool Manipulator::parseModEvent(const std::string& entry)
 	{
 		const auto sections = string::split(entry, "|");
 		if(sections.size() != 3)
 		{
 			log::Error("Wrong FormList format. Expected 3 sections, got {}.", sections.size());
-			infos_[InfoType::MODEV_INV]++;
+			infos_[ift::MODEV_INV]++;
 			return false;
 		}
 
@@ -806,14 +862,14 @@ namespace flm
 		if(event_name.empty())
 		{
 			log::Error("The event name is empty, skipping!");
-			infos_[InfoType::MODEV_INV]++;
+			infos_[ift::MODEV_INV]++;
 			return false;
 		}
 
 		if(ContainsNonAlpha(event_name))
 		{
 			log::Error("The event name: {}, can only contain letters, skipping!", event_name);
-			infos_[InfoType::MODEV_INV]++;
+			infos_[ift::MODEV_INV]++;
 			return false;
 		}
 
@@ -828,7 +884,7 @@ namespace flm
 			else
 			{
 				log::Error("Unknown Alias: {}.", form_list_info);
-				infos_[InfoType::ALIASES_NE]++;
+				infos_[ift::ALIASES_NE]++;
 				found_destination = false;
 			}
 		}
@@ -838,7 +894,7 @@ namespace flm
 			if(!form_list)
 			{
 				log::Error("Unable to find FormList: {}.", form_list_info);
-				infos_[InfoType::FLIST_MIS]++;
+				infos_[ift::FLIST_MIS]++;
 				found_destination = false;
 			}
 			else
@@ -856,8 +912,8 @@ namespace flm
 		if(!found_destination)
 			return false;
 
-		infos_[InfoType::FORMS] += static_cast<int>(forms.size());
-		infos_[InfoType::FORMS_MISS] += missing;
+		infos_[ift::FORMS] += static_cast<int>(forms.size());
+		infos_[ift::FORMS_MISS] += missing;
 
 		if(form_lists.size() > 0 && forms.size() > 0)
 		{
@@ -882,12 +938,12 @@ namespace flm
 				else
 					mod_event_data.emplace(std::piecewise_construct, std::forward_as_tuple(fl), std::forward_as_tuple(forms));
 			}
-			infos_[InfoType::MODEV]++;
+			infos_[ift::MODEV]++;
 		}
 		else
 		{
 			log::Info("Mod Event {} do not have any valid FormLists or Forms, skipping.", event_name);
-			infos_[InfoType::MODEV_INV]++;
+			infos_[ift::MODEV_INV]++;
 			return false;
 		}
 
@@ -917,11 +973,15 @@ namespace flm
 	inline bool Manipulator::parseList(const std::string& entry, const std::string_view& entryName, std::vector<RE::TESForm*>& list)
 	{
 		const auto sections = string::split(entry, "|");
-		if(sections.size() != 1)
+		if(sections.size() != 1 && sections.size() != 2)
 		{
-			log::Error("Wrong {} format. Expected 1 sections, got {}.", entryName, sections.size());
+			log::Error("Wrong {} format. Expected 1 or 2 sections, got {}.", entryName, sections.size());
 			return false;
 		}
+
+		if(sections.size() == 2)
+			if(const auto res = evaluateFilter(sections[1]); res != 1)
+				return res == 0 ? false : true;
 
 		const auto forms_info = sections[0];
 		auto forms_sections = string::split(forms_info, ",");
@@ -936,8 +996,8 @@ namespace flm
 		}
 		if(log::operating_mode == OperatingMode::INITIALIZE && log::debug_mode)
 			log::Info("{}: found {} Forms, {} missing Forms.", entryName, amount, missing);
-		infos_[InfoType::FORMS] += amount;
-		infos_[InfoType::FORMS_MISS] += missing;
+		infos_[ift::FORMS] += amount;
+		infos_[ift::FORMS_MISS] += missing;
 
 		return true;
 	}
@@ -945,18 +1005,22 @@ namespace flm
 	inline bool Manipulator::parsePair(const std::string& entry, const PairEntryNames& names, std::vector<FormPair>& list, const bool plantTypesWarn)
 	{
 		const auto sections = string::split(entry, "|");
-		if(sections.size() != 2)
+		if(sections.size() != 2 && sections.size() != 3)
 		{
-			log::Error("Wrong {} format. Expected 2 sections, got {}.", std::get<0>(names), sections.size());
+			log::Error("Wrong {} format. Expected 2 or 3 sections, got {}.", std::get<0>(names), sections.size());
 			return false;
 		}
+
+		if(sections.size() == 3)
+			if(const auto res = evaluateFilter(sections[2]); res != 1)
+				return res == 0 ? false : true;
 
 		const auto first_info = sections[0];
 		const auto first = FindForm(first_info);
 		if(!first)
 		{
 			log::Error("Unable to find {}: {}.", std::get<1>(names), first_info);
-			infos_[InfoType::FORMS_MISS]++;
+			infos_[ift::FORMS_MISS]++;
 		}
 
 		const auto second_info = sections[1];
@@ -964,7 +1028,7 @@ namespace flm
 		if(!second)
 		{
 			log::Error("Unable to find {}: {}.", std::get<2>(names), second_info);
-			infos_[InfoType::FORMS_MISS]++;
+			infos_[ift::FORMS_MISS]++;
 		}
 
 		if(!first || !second)
@@ -982,7 +1046,7 @@ namespace flm
 		if(log::operating_mode == OperatingMode::INITIALIZE && log::debug_mode)
 			log::Info("Found {} \"{}\" [{:X}], {} \"{}\" [{:X}].", std::get<1>(names), first->GetName(), first->formID, std::get<2>(names), second->GetName(), second->formID);
 
-		infos_[InfoType::FORMS] += 2;
+		infos_[ift::FORMS] += 2;
 		list.emplace_back(first, second);
 		return true;
 	}
@@ -1002,6 +1066,42 @@ namespace flm
 		return true;
 	}
 
+	inline int Manipulator::evaluateFilter(const std::string& filter)
+	{
+		int meet_criteria = 0;
+		if(filter[0] == '#')
+		{
+			if(auto filter_name = filter.substr(1); filters_.contains(filter_name))
+				meet_criteria = filters_[filter_name] ? 1 : -1;
+			else
+			{
+				log::Error("Filter {} was not found!", filter_name);
+				meet_criteria = 0;
+			}
+		}
+		else
+			meet_criteria = EvaluateFilter(filter);
+
+		if(meet_criteria == 1)
+		{
+			if(log::debug_mode)
+				log::Info("Filter \"{}\" is valid", filter);
+		}
+		else if(meet_criteria == -1)
+		{
+			if(log::debug_mode)
+				log::Info("Filter \"{}\" does not have valid conditions.", filter);
+			infos_[ift::ENTRIES_FO]++;
+		}
+		else if(meet_criteria == 0)
+		{
+			infos_[ift::FILTERS_NE]++;
+			log::Warn("Filter \"{}\" was omitted because it is invalid.", filter);
+		}
+
+		return meet_criteria;
+	}
+
 	inline int Manipulator::parseFormEntry(std::string& entry, std::vector<RE::TESForm*>& forms)
 	{
 		if(entry.starts_with("#"))
@@ -1012,7 +1112,7 @@ namespace flm
 			else
 			{
 				log::Error("Unknown Group: {}.", entry);
-				infos_[InfoType::GROUPS_NE]++;
+				infos_[ift::GROUPS_NE]++;
 				return -2;
 			}
 		}
