@@ -19,14 +19,26 @@ namespace flm
 	}
 
 	/**
-	 * \brief Returns a poniter to Plugin based on its name.
-	 * \param pluginName    - Name of the plugin with extension.
-	 * \return              - TESFile pointer or nullptr if not found.
+	 * \brief Checks whether the specified plugin is active in the current mod list.
+	 * \param pluginName    - Checks whether the specified plugin is active in the current mod list.
+	 * \return              = True, if plugin is loaded or merged.
 	 */
-	inline const RE::TESFile* GetTesFile(const std::string_view& pluginName)
+	inline bool LookupLoadedModByName(const std::string_view& pluginName)
 	{
 		static const auto data_handler = RE::TESDataHandler::GetSingleton();
-		return data_handler ? data_handler->LookupModByName(pluginName) : nullptr;
+		if(!data_handler)
+			return false;
+		const auto normal = data_handler->LookupLoadedModByName(pluginName);
+		const auto light = data_handler->LookupLoadedLightModByName(pluginName);
+		auto merged = false;
+		if(g_mergeMapperInterface)
+		{
+			const auto [fst, snd] = g_mergeMapperInterface->GetNewFormID(pluginName.data(), 0x00);
+			if(const auto new_plugin_name = std::string(fst); pluginName != new_plugin_name)
+				merged = data_handler->LookupLoadedModByName(new_plugin_name) || data_handler->LookupLoadedLightModByName(new_plugin_name);
+		}
+
+		return normal || light || merged;
 	}
 
 	/**
@@ -239,11 +251,12 @@ namespace flm
 				else
 				{
 					std::string plugin_name = plugin.substr(1);
-					const auto res = GetTesFile(plugin_name);
-					if(log::debug_mode)
-						log::Info("Plugin {} status {}.", plugin_name, res ? true : false);
+					bool plugin_found = LookupLoadedModByName(plugin_name);
 
-					if(!res && plugin[0] == '+' || res && plugin[0] == '-')
+					if(log::debug_mode)
+						log::Info("Plugin {} status {}.", plugin_name, plugin_found);
+
+					if(!plugin_found && plugin[0] == '+' || plugin_found && plugin[0] == '-')
 					{
 						result = false;
 						break;
