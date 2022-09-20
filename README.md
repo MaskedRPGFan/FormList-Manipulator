@@ -6,6 +6,8 @@ With this mod, you can get rid of conflicts between mods that modify FormLists, 
 
 As of version 1.3.0, you can use Mod Events to update FormLists on demand during the game.
 
+As of version 1.5.0, you can add filters to entries in order to skip them.
+
 ## Config Files
 
 Configuration files can have any name, but they must be INI files whose name ends with _FLM. Example: Toys_FLM.ini.
@@ -13,7 +15,7 @@ Configuration files can have any name, but they must be INI files whose name end
 Or they can be any INI files located in the "FLM" directory.
 Configuration files are processed in alphabetical order. First from the Data directory, then from the Data\FLM.
 
-Keys: Alias, Group, Filter, ModEvent, FormList, Plant, BToys, GToys, HairColors, AtronachForge, AtronachForgeSigil are not case-sensitive.
+Keys: Alias, Group, Filter, ModEvent, FormList, Plant, BToys, GToys, HairColors, AtronachForge, AtronachForgeSigil, DragonbornSpiderCrafting are not case-sensitive.
 Filters, Aliases and Groups, once defined, remain available for other INI files.
 Filter is always optional.
 
@@ -92,7 +94,8 @@ where,
 
 where,
 * first form is for Recipe,
-* second for Result.
+* second for Result,
+* filter is optional.
 
 ## Simplified usage for Atronach Forge with Sigil Stone:
 
@@ -100,7 +103,17 @@ where,
 
 where,
 * first form is for Recipe,
-* second for Result.
+* second for Result,
+* filter is optional.
+
+## Simplified usage for Dragonborn Spider Crafting:
+
+```DragonbornSpiderCrafting = Form|Form|Filter```
+
+where,
+* first form is for Recipe,
+* second for Result,
+* filter is optional.
 
 
 
