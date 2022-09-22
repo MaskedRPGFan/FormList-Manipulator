@@ -124,25 +124,6 @@ namespace flm
 	}
 
 	/**
-	 * \brief Removes spaces between & and , for Filters.
-	 * \param string        - Filter to parse.
-	 * \return              - Sanitized Filter.
-	 */
-	inline std::string SanitizeFilter(const std::string& string)
-	{
-		std::string sanitized = string;
-
-		// strip spaces between " & "
-		static const boost::regex re_bar(R"(\s*&\s*)", boost::regex_constants::optimize);
-		sanitized = regex_replace(sanitized, re_bar, "&");
-
-		// strip spaces between " , "
-		static const boost::regex re_comma(R"(\s*,\s*)", boost::regex_constants::optimize);
-		sanitized = regex_replace(sanitized, re_comma, ",");
-		return sanitized;
-	}
-
-	/**
 	 * \brief Change string to make all characters lowercase.
 	 * \param string        - String to change.
 	 */
@@ -150,6 +131,22 @@ namespace flm
 	{
 		std::ranges::transform(string, string.begin(), [](const unsigned char c)
 							   { return std::tolower(c); });
+	}
+
+	/**
+	 * \brief Removes spaces between , for Filters.
+	 * \param string        - Filter to parse.
+	 * \return              - Sanitized Filter.
+	 */
+	inline std::string SanitizeFilter(const std::string& string)
+	{
+		std::string sanitized = string;
+
+		// strip spaces between " , "
+		static const boost::regex re_comma(R"(\s*,\s*)", boost::regex_constants::optimize);
+		sanitized = regex_replace(sanitized, re_comma, ",");
+		ToLower(sanitized);
+		return sanitized;
 	}
 
 	/**
@@ -228,6 +225,42 @@ namespace flm
 	}
 
 	/**
+	 * \brief It splits the filter string into conditions.
+	 * \param filter            - Filter to split.
+	 * \return                  - Split conditions.
+	 */
+	inline std::vector<std::string> SplitFilterConditions(const std::string& filter)
+	{
+		std::vector<std::string> conditions;
+		int tmp = 0, next_position = -1, prev = -1;
+		std::set<int> positions;
+		do
+		{
+			positions.clear();
+			prev = next_position + 1;
+			tmp = static_cast<int>(filter.find(".esp", prev));
+			if(tmp > 0)
+				positions.emplace(tmp);
+
+			tmp = static_cast<int>(filter.find(".esl", prev));
+			if(tmp > 0)
+				positions.emplace(tmp);
+
+			tmp = static_cast<int>(filter.find(".esm", prev));
+			if(tmp > 0)
+				positions.emplace(tmp);
+
+			if(positions.size() > 0)
+				next_position = *positions.begin() + 4;
+			else
+				break;
+
+			conditions.emplace_back(filter.substr(prev, next_position - prev));
+		} while(positions.size() > 1);
+		return conditions;
+	}
+
+	/**
 	 * \brief Evaluate Filter.
 	 * \param filter                    - Filter to evaluate in format: +/-ESP[&+-ESP], +/-ESP[&+-ESP], itd.
 	 * \return                          - 1, if Filter meet criteria, 0 if invalid, -1 if did not meet criteria.
@@ -238,7 +271,7 @@ namespace flm
 
 		for(auto& cs : conditions_sections)
 		{
-			const auto plugins = string::split(cs, "&");
+			const auto plugins = SplitFilterConditions(cs);
 			bool result = true;
 			for(auto& plugin : plugins)
 			{

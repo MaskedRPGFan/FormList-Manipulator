@@ -34,7 +34,7 @@ namespace Plugin
 		// clang-format off
 		1u,
 		5u,
-		1u,
+		2u,
 		// clang-format on
 	};
 
