@@ -3,7 +3,7 @@
     "name": "formlistmanipulator",
     "version": "1.5.3",
     "description": "Allows dynamic modification of FormLists.",
-    "homepage": "https://www.nexusmods.com/users/22822094",
+    "homepage": "https://www.nexusmods.com/skyrimspecialedition/mods/74037",
     "dependencies": [
         "boost-stl-interfaces",
         "boost-regex",
