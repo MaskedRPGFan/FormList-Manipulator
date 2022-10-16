@@ -1,6 +1,5 @@
 #include "Plugin.hpp"
 #include <SimpleIni.h>
-#include <xbyak/xbyak.h>
 
 #include "Manipulator/RegisterFuncs.hpp"
 #include "MergeMapperPluginAPI.h"
@@ -68,36 +67,6 @@ namespace
 		}
 		return "Unknown"sv;
 	}
-}
-
-/**
- * \brief For AE versions of the executable - SKSE looks for static data in the DLL with the plugin metadata.
- */
-extern "C" [[maybe_unused]] DLLEXPORT constinit auto SKSEPlugin_Version = []() noexcept
-{
-	SKSE::PluginVersionData v;
-
-	v.PluginVersion(Plugin::VERSION);
-	v.PluginName(Plugin::NAME);
-	v.AuthorName(Plugin::AUTHOR);
-	v.UsesAddressLibrary(true);
-	v.HasNoStructUse(true);
-	v.UsesStructsPost629(false);
-
-	return v;
-}();
-
-/**
- * \brief SKSE's way of identifying an SKSE plugin.
- * \param pluginInfo    - Plugin info structure.
- * \return              - True, if everything went fine.
- */
-extern "C" [[maybe_unused]] DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface*, SKSE::PluginInfo* pluginInfo)
-{
-	pluginInfo->name = Plugin::NAME.data();
-	pluginInfo->infoVersion = SKSE::PluginInfo::kVersion;
-	pluginInfo->version = Plugin::VERSION.pack();
-	return true;
 }
 
 /**

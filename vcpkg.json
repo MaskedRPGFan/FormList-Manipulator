@@ -1,15 +1,16 @@
 {
     "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
     "name": "formlistmanipulator",
-    "version": "1.0.0",
+    "version": "1.5.3",
+    "description": "Allows dynamic modification of FormLists.",
+    "homepage": "https://www.nexusmods.com/users/22822094",
     "dependencies": [
-        "commonlibsse-ng",
-        "simpleini",
         "boost-stl-interfaces",
         "boost-regex",
         "boost-algorithm",
+        "commonlibsse-ng",
         "mergemapper",
-        "xbyak",
-        "rsm-binary-io"
+        "rsm-binary-io",
+        "simpleini"
     ]
 }

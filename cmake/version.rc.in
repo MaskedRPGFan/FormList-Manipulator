@@ -20,7 +20,7 @@ BEGIN
 			VALUE "FileDescription", "@PROJECT_DESCRIPTION@"
 			VALUE "FileVersion", "@PROJECT_VERSION@.0"
 			VALUE "InternalName", "@PROJECT_NAME@"
-			VALUE "LegalCopyright", "Copyright @PROJECT_AUTHOR@"
+			VALUE "LegalCopyright", "Copyright© @PROJECT_AUTHOR@"
 			VALUE "ProductName", "@PROJECT_NAME@"
 			VALUE "ProductVersion", "@PROJECT_VERSION@.0"
 		END
