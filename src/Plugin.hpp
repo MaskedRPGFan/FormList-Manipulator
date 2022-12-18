@@ -11,14 +11,15 @@
 #include <boost/regex.hpp>
 #include <string_view>
 #include <spdlog/sinks/basic_file_sink.h>
+#include <ClibUtil/rng.hpp>
+#include <ClibUtil/string.hpp>
 
 using namespace std::literals;
 
 namespace logger = SKSE::log;
-namespace numeric = SKSE::stl::numeric;
-namespace string = SKSE::stl::string;
+namespace string = clib_util::string;
 
-using RNG = SKSE::stl::RNG;
+using RNG = clib_util::RNG;
 
 namespace util
 {
@@ -34,7 +35,7 @@ namespace Plugin
 		// clang-format off
 		1u,
 		5u,
-		3u,
+		4u,
 		// clang-format on
 	};
 

@@ -56,7 +56,7 @@ namespace flm
 			auto [plugin, form_id_str] = std::make_pair(split_id.at(1), split_id.at(0));
 			if(form_id_str.size() == 10)
 				form_id_str.erase(2, 2);
-			auto form_id = string::lexical_cast<RE::FormID>(form_id_str, true);
+			auto form_id = string::to_num<RE::FormID>(form_id_str, true);
 
 			if(g_mergeMapperInterface)
 			{
@@ -75,7 +75,7 @@ namespace flm
 			}
 		}
 		else if(string.find("0x"sv) != std::string::npos)
-			if(const auto f = RE::TESForm::LookupByID(string::lexical_cast<RE::FormID>(string, true)))
+			if(const auto f = RE::TESForm::LookupByID(string::to_num<RE::FormID>(string, true)))
 				return f->As<T>();
 			else
 			{

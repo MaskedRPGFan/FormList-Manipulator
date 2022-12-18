@@ -1071,7 +1071,9 @@ namespace flm
 		int meet_criteria = 0;
 		if(filter[0] == '#')
 		{
-			if(auto filter_name = filter.substr(1); filters_.contains(filter_name))
+			auto filter_name = filter.substr(1);
+			ToLower(filter_name);
+			if(filters_.contains(filter_name))
 				meet_criteria = filters_[filter_name] ? 1 : -1;
 			else
 			{
