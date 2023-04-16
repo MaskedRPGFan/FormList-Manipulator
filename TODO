@@ -8,3 +8,8 @@
 ☐ Extended debug mode - Full FromList information for FormsLists included in FormListManipulator_DEBUG.ini.
 ✔ Handling of events sent by other mods. @done(22-09-06 17:59)
 ✔ Different structure for printing out information (due to update 1.2.1). @done(22-09-06 17:59)
+✔ Add the contents of one FormList to another. @done(23-04-16 17:03)
+☐ Check if #Group is EditorID name.
+☐ Check if *FormList is EditorID name.
+☐ Remove Forms functionality.
+☐ Add a function to FormList Manipulator to pick out all forms with a specific keyword and add them to a formlist. Need to work with SPID and KID.

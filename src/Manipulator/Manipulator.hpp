@@ -648,8 +648,7 @@ namespace flm
 		}
 		else
 		{
-			const auto form_list = FindForm<RE::BGSListForm>(form_list_info);
-			if(!form_list)
+			if(const auto form_list = FindForm<RE::BGSListForm>(form_list_info); !form_list)
 			{
 				log::Error("Unable to find FormList: {}.", form_list_info);
 				infos_[ift::FLIST_MIS]++;
@@ -659,7 +658,7 @@ namespace flm
 				form_lists.emplace_back(form_list);
 		}
 
-		const auto forms_info = sections[1];
+		const auto& forms_info = sections[1];
 		auto forms_sections = string::split(forms_info, ",");
 		std::vector<RE::TESForm*> forms;
 		int missing = 0;
@@ -710,7 +709,7 @@ namespace flm
 		}
 
 		bool duplicate = false;
-		const auto alias_info = sections[0];
+		const auto& alias_info = sections[0];
 		if(aliases_.contains(alias_info))
 		{
 			log::Error("Alias {} exists.", alias_info);
@@ -718,7 +717,7 @@ namespace flm
 			duplicate = true;
 		}
 
-		const auto form_lists_info = sections[1];
+		const auto& form_lists_info = sections[1];
 		const auto form_lists_sections = string::split(form_lists_info, ",");
 		std::vector<RE::BGSListForm*> form_lists;
 		int missing = 0;
@@ -740,7 +739,7 @@ namespace flm
 			return false;
 		}
 
-		if(form_lists.size() > 0)
+		if(!form_lists.empty())
 		{
 			aliases_.emplace(std::piecewise_construct, std::forward_as_tuple(alias_info), std::forward_as_tuple(form_lists));
 			if(log::debug_mode)
@@ -765,7 +764,7 @@ namespace flm
 		}
 
 		bool duplicate = false;
-		const auto group_info = sections[0];
+		const auto& group_info = sections[0];
 
 		if(groups_.contains(group_info))
 		{
@@ -774,7 +773,7 @@ namespace flm
 			duplicate = true;
 		}
 
-		const auto forms_info = sections[1];
+		const auto& forms_info = sections[1];
 		const auto forms_sections = string::split(forms_info, ",");
 		std::vector<RE::TESForm*> forms;
 		int missing = 0;
@@ -796,7 +795,7 @@ namespace flm
 			return false;
 		}
 
-		if(forms.size() > 0)
+		if(!forms.empty())
 		{
 			groups_.emplace(std::piecewise_construct, std::forward_as_tuple(group_info), std::forward_as_tuple(forms));
 			if(log::debug_mode)
@@ -858,7 +857,7 @@ namespace flm
 
 		bool found_destination = true;
 
-		const auto event_name = sections[0];
+		const auto& event_name = sections[0];
 		if(event_name.empty())
 		{
 			log::Error("The event name is empty, skipping!");
@@ -890,8 +889,7 @@ namespace flm
 		}
 		else
 		{
-			const auto form_list = FindForm<RE::BGSListForm>(form_list_info);
-			if(!form_list)
+			if(const auto form_list = FindForm<RE::BGSListForm>(form_list_info); !form_list)
 			{
 				log::Error("Unable to find FormList: {}.", form_list_info);
 				infos_[ift::FLIST_MIS]++;
@@ -901,7 +899,7 @@ namespace flm
 				form_lists.emplace_back(form_list);
 		}
 
-		const auto forms_info = sections[2];
+		const auto& forms_info = sections[2];
 		auto forms_sections = string::split(forms_info, ",");
 		std::vector<RE::TESForm*> forms;
 		int missing = 0;
@@ -915,7 +913,7 @@ namespace flm
 		infos_[ift::FORMS] += static_cast<int>(forms.size());
 		infos_[ift::FORMS_MISS] += missing;
 
-		if(form_lists.size() > 0 && forms.size() > 0)
+		if(!form_lists.empty() && !forms.empty())
 		{
 			auto& events = event_manager_.Events();
 			if(!events.contains(event_name))
@@ -983,7 +981,7 @@ namespace flm
 			if(const auto res = evaluateFilter(sections[1]); res != 1)
 				return res == 0 ? false : true;
 
-		const auto forms_info = sections[0];
+		const auto& forms_info = sections[0];
 		auto forms_sections = string::split(forms_info, ",");
 		int amount = 0;
 		int missing = 0;
@@ -1015,7 +1013,7 @@ namespace flm
 			if(const auto res = evaluateFilter(sections[2]); res != 1)
 				return res == 0 ? false : true;
 
-		const auto first_info = sections[0];
+		const auto& first_info = sections[0];
 		const auto first = FindForm(first_info);
 		if(!first)
 		{
@@ -1023,7 +1021,7 @@ namespace flm
 			infos_[ift::FORMS_MISS]++;
 		}
 
-		const auto second_info = sections[1];
+		const auto& second_info = sections[1];
 		const auto second = FindForm(second_info);
 		if(!second)
 		{
@@ -1044,7 +1042,7 @@ namespace flm
 		}
 
 		if(log::operating_mode == OperatingMode::INITIALIZE && log::debug_mode)
-			log::Info("Found {} \"{}\" [{:X}], {} \"{}\" [{:X}].", std::get<1>(names), first->GetName(), first->formID, std::get<2>(names), second->GetName(), second->formID);
+			log::Info(R"(Found {} "{}" [{:X}], {} "{}" [{:X}].)", std::get<1>(names), first->GetName(), first->formID, std::get<2>(names), second->GetName(), second->formID);
 
 		infos_[ift::FORMS] += 2;
 		list.emplace_back(first, second);
@@ -1116,6 +1114,20 @@ namespace flm
 				log::Error("Unknown Group: {}.", entry);
 				infos_[ift::GROUPS_NE]++;
 				return -2;
+			}
+		}
+		else if(entry.starts_with("*"))
+		{
+			entry.erase(0, 1);
+			if(const auto form_list = FindForm<RE::BGSListForm>(entry); !form_list)
+			{
+				log::Error("Unable to find FormList: {}.", entry);
+				return -1;
+			}
+			else
+			{
+				for(auto form : form_list->forms)
+					forms.emplace_back(form);
 			}
 		}
 		else

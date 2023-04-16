@@ -6,7 +6,7 @@ message("Using toolchain file ${CMAKE_TOOLCHAIN_FILE}.")
 ########################################################################################################################
 project(
     FormListManipulator
-    VERSION 1.5.4.0
+    VERSION 1.6.0.0
     DESCRIPTION "Allows dynamic modification of FormLists."
     LANGUAGES CXX
 )
