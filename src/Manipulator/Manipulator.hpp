@@ -779,14 +779,32 @@ namespace flm
 		int missing = 0;
 		for(auto& fs : forms_sections)
 		{
-			auto form = FindForm(fs);
-			if(!form)
+            if(fs.starts_with("*"))
 			{
-				log::Error("Unable to find Form: {} for Group.", fs);
-				missing++;
-				continue;
+                std::string tmp = fs;
+				tmp.erase(0, 1);
+				if(const auto form_list = FindForm<RE::BGSListForm>(tmp); !form_list)
+				{
+					log::Error("Unable to find FormList: {}.", tmp);
+					missing++;
+				}
+				else
+				{
+					for(auto form : form_list->forms)
+						forms.emplace_back(form);
+				}
 			}
-			forms.emplace_back(form);
+			else
+			{
+				auto form = FindForm(fs);
+				if(!form)
+				{
+					log::Error("Unable to find Form: {} for Group.", fs);
+					missing++;
+					continue;
+				}
+				forms.emplace_back(form);
+			}
 		}
 
 		if(duplicate)

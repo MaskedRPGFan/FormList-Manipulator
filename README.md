@@ -21,7 +21,7 @@ Filter is always optional.
 
 ##  General usage
 
-```FormList = FList|Form, Form, #Group, etc|Filter```
+```FormList = FList|Form, Form, *FormList, #Group, etc|Filter```
 
 where,
 * FList can be: EditorID or FormID~ESP or Alias.
@@ -29,6 +29,7 @@ where,
 * FormID - record ID. Example: 0xD80 or 0x03008246 or 0xFE00080A or 0x8246 (You no longer need to remove any digits from FormID, the plugin will do it automatically).
 * ESP - name of the plugin with extension. Not required for base plugins and DLC. Example Unofficial Skyrim Special Edition Patch.esp. Not case-sensitive.
 * EditorID - form editorID.
+* Adding an asterisk before a list adds its contents instead of the list itself.
 * Filter is optional. You can use previously defined filter or create a new filter in place.
 * Filter format: Condition,Condition, etc or #NameForFilter. To learn more about the filter format, see the Filters section below.
 
@@ -45,7 +46,7 @@ where,
 To use a predefined filter, add the # sign before its name.
 
 ## Mod Events
-```ModEvent = EventName|FList|Form, Form, #Group, etc```
+```ModEvent = EventName|FList|Form, Form, *FormList, #Group, etc```
 
 where,
 * EventName is a string of letters A-Z, a-z.
@@ -62,7 +63,7 @@ Aliases are collections of FormLists. To use an Alias add the # sign before its 
 
 ##  Groups
 
-```Group = NameForGroup|Form, Form, etc```
+```Group = NameForGroup|Form, Form, *FormList, etc```
 
 Groups are collections of Forms. To use a Group add the # sign before its name. Groups are processed at the beginning of the configuration file, regardless of their position in the file. For FormList, ModEvent, BToy, GToy, HairColors, AtronachForge, AtronachForgeSigil keywords.
 
@@ -77,16 +78,16 @@ where,
 
 ## Simplified usage for Boy's Toys:
 
-```BToys = Form, Form, #Group, etc|Filter```
+```BToys = Form, Form, *FormList, #Group, etc|Filter```
 
 ## Simplified usage for Girl's Toys:
 
-```GToys = Form, Form, #Group, etc|Filter```
+```GToys = Form, Form, *FormList, #Group, etc|Filter```
 
 
 ## Simplified usage for Hair Colors:
 
-```HairColors = Form, Form, #Group, etc|Filter```
+```HairColors = Form, Form, *FormList, #Group, etc|Filter```
 
 ## Simplified usage for Atronach Forge:
 
