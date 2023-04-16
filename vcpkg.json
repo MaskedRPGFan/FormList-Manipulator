@@ -1,17 +1,17 @@
 {
-  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
-  "name": "formlistmanipulator",
-  "version": "1.5.4",
-  "description": "Allows dynamic modification of FormLists.",
-  "homepage": "https://www.nexusmods.com/skyrimspecialedition/mods/74037",
-  "dependencies": [
-    "boost-stl-interfaces",
-    "boost-regex",
-    "boost-algorithm",
-    "commonlibsse-ng",
-    "mergemapper",
-    "rsm-binary-io",
-    "simpleini",
-    "clib-util"
-  ]
+    "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+    "name": "formlistmanipulator",
+    "version": "1.5.4",
+    "description": "Allows dynamic modification of FormLists.",
+    "homepage": "https://www.nexusmods.com/skyrimspecialedition/mods/74037",
+    "dependencies": [
+        "boost-stl-interfaces",
+        "boost-regex",
+        "boost-algorithm",
+        "clib-util",
+        "commonlibsse-ng",
+        "mergemapper",
+        "rsm-binary-io",
+        "simpleini"
+    ]
 }

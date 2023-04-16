@@ -63,6 +63,7 @@ source_group(
 find_package(CommonLibSSE CONFIG REQUIRED)
 find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
 find_path(MERGEMAPPER_INCLUDE_DIRS "MergeMapperPluginAPI.h")
+find_path(CLIB_UTIL_INCLUDE_DIRS "ClibUtil/utils.hpp")
 
 add_commonlibsse_plugin(
 	${PROJECT_NAME} 
@@ -80,6 +81,7 @@ target_include_directories(${PROJECT_NAME}
         Src
 		${SIMPLEINI_INCLUDE_DIRS}
 		${MERGEMAPPER_INCLUDE_DIRS}
+		${CLIB_UTIL_INCLUDE_DIRS}
         )
 
 target_precompile_headers(${PROJECT_NAME}

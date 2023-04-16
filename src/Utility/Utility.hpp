@@ -75,14 +75,13 @@ namespace flm
 			}
 		}
 		else if(string.find("0x"sv) != std::string::npos)
+		{
 			if(const auto f = RE::TESForm::LookupByID(string::to_num<RE::FormID>(string, true)))
 				return f->As<T>();
-			else
-			{
-				if(log::operating_mode == OperatingMode::INITIALIZE && log::debug_mode)
-					log::Error("Can't find Form with FormID {}.", string);
-				return nullptr;
-			}
+			if(log::operating_mode == OperatingMode::INITIALIZE && log::debug_mode)
+				log::Error("Can't find Form with FormID {}.", string);
+			return nullptr;
+		}
 		if(const auto f = RE::TESForm::LookupByEditorID(string))
 			return f->As<T>();
 
@@ -232,12 +231,12 @@ namespace flm
 	inline std::vector<std::string> SplitFilterConditions(const std::string& filter)
 	{
 		std::vector<std::string> conditions;
-		int tmp = 0, next_position = -1, prev = -1;
+		int tmp = 0, next_position = -1;
 		std::set<int> positions;
 		do
 		{
 			positions.clear();
-			prev = next_position + 1;
+			const int prev = next_position + 1;
 			tmp = static_cast<int>(filter.find(".esp", prev));
 			if(tmp > 0)
 				positions.emplace(tmp);
@@ -250,7 +249,7 @@ namespace flm
 			if(tmp > 0)
 				positions.emplace(tmp);
 
-			if(positions.size() > 0)
+			if(!positions.empty())
 				next_position = *positions.begin() + 4;
 			else
 				break;

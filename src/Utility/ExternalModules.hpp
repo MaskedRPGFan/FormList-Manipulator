@@ -16,11 +16,10 @@ namespace flm
 	 */
 	inline std::string GetEditorId(const RE::FormID fromId)
 	{
-		static auto function = reinterpret_cast<const char* (*)(std::uint32_t)>(GetProcAddress(tweaks, "GetFormEditorID"));
-		if(function)
+		if(static auto function = reinterpret_cast<const char* (*)(std::uint32_t)>(GetProcAddress(tweaks, "GetFormEditorID")))
 			return function(fromId);
 
-		return std::string();
+		return {};
 	}
 
 	/**

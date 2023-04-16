@@ -28,14 +28,14 @@ namespace flm
 			EventManager& GetEventManager();
 
 		private:
-			std::array<int, ift::ALL> infos_; /* Store values for types of countable statistics.*/
+			std::array<int, ift::ALL> infos_{}; /* Store values for types of countable statistics.*/
 			FormsLists lists_;                /* FormLists from Skyrim for use in simplified entries. */
 			EventManager event_manager_;      /* Manages sending and receiving mod events. */
 
 			const std::array<ParseEntryCallback, EntryType::ALL> add_callbacks_{
 				std::bind(&Manipulator::parseAlias, this, std::placeholders::_1),                    /* Aliases for FormLists. */
 				std::bind(&Manipulator::parseGroup, this, std::placeholders::_1),                    /* Groups for Forms. */
-				std::bind(&Manipulator::parseFilter, this, std::placeholders::_1),                   /* Filters for Entires. */
+				std::bind(&Manipulator::parseFilter, this, std::placeholders::_1),                   /* Filters for Entries. */
 				std::bind(&Manipulator::parseModEvent, this, std::placeholders::_1),                 /* Mod events. */
 				std::bind(&Manipulator::parseFormList, this, std::placeholders::_1),                 /* FromList. */
 				std::bind(&Manipulator::parsePlant, this, std::placeholders::_1),                    /* Plant. */
@@ -820,7 +820,7 @@ namespace flm
 			return false;
 		}
 
-		const std::string filter_info = sections[0];
+		const std::string& filter_info = sections[0];
 
 		if(filters_.contains(filter_info))
 		{
@@ -1068,7 +1068,7 @@ namespace flm
 
 	inline int Manipulator::evaluateFilter(const std::string& filter)
 	{
-		int meet_criteria = 0;
+		int meet_criteria;
 		if(filter[0] == '#')
 		{
 			auto filter_name = filter.substr(1);

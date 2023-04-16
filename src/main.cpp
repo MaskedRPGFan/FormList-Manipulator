@@ -1,5 +1,4 @@
 #include "Plugin.hpp"
-#include <SimpleIni.h>
 
 #include "Manipulator/RegisterFuncs.hpp"
 #include "MergeMapperPluginAPI.h"
@@ -64,6 +63,7 @@ namespace
 				return "Special Edition"sv;
 			case REL::Module::Runtime::VR:
 				return "VR"sv;
+			default: ;
 		}
 		return "Unknown"sv;
 	}
