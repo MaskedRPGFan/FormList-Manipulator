@@ -7,6 +7,7 @@ namespace flm
 	inline std::array<std::string, EntryType::ALL> keywords{
 		"alias",                    /* Aliases for FormLists. */
 		"group",                    /* Groups for Forms. */
+		"collection",               /* Collections for Forms with specific keyword. */
 		"filter",                   /* Filters for Entries. */
 		"modevent",                 /* Mod events. */
 		"formlist",                 /* FromList. */

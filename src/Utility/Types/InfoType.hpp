@@ -18,7 +18,10 @@ namespace flm::InfoType
 		ALIASES_NE,  /* How many invalid aliases is. */
 
 		GROUPS_DUP, /* Total amount of Groups duplicates. */
-		GROUPS_NE,  /* How many in invalid aliases is. */
+		GROUPS_NE,  /* How many in invalid groups is. */
+
+		COLLE_DUP, /* Total amount of Collections duplicates. */
+		COLLE_NE,  /* How many in invalid collections is. */
 
 		FILTERS_DUP, /* Total amount of Filters duplicates. */
 		FILTERS_NE,  /* How many in invalid Filters is. */

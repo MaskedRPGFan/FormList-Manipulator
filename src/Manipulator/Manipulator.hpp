@@ -35,6 +35,7 @@ namespace flm
 			const std::array<ParseEntryCallback, EntryType::ALL> add_callbacks_{
 				std::bind(&Manipulator::parseAlias, this, std::placeholders::_1),                    /* Aliases for FormLists. */
 				std::bind(&Manipulator::parseGroup, this, std::placeholders::_1),                    /* Groups for Forms. */
+				std::bind(&Manipulator::parseCollection, this, std::placeholders::_1),               /* Collections for Forms with specific keyword. */
 				std::bind(&Manipulator::parseFilter, this, std::placeholders::_1),                   /* Filters for Entries. */
 				std::bind(&Manipulator::parseModEvent, this, std::placeholders::_1),                 /* Mod events. */
 				std::bind(&Manipulator::parseFormList, this, std::placeholders::_1),                 /* FromList. */
@@ -49,6 +50,7 @@ namespace flm
 
 			std::map<std::string, FormsLists> aliases_; /* All valid Aliases. */
 			std::map<std::string, Forms> groups_;       /* All valid Groups. */
+			std::map<std::string, Forms> collections_;  /* All valid Collections. */
 			std::map<std::string, bool> filters_;       /* All valid Filters. */
 			FormListsData form_lists_;                  /* All valid Forms for FormLists. */
 			std::vector<FormPair> plants_;              /* All valid Forms with seeds and plants. */
@@ -163,6 +165,12 @@ namespace flm
 			 * \return                          - True, if everything went fine.
 			 */
 			bool parseGroup(const std::string& entry);
+			/**
+			 * \brief Adds Collection to internal structure based on string entry. String is validated.
+			 * \param entry                     - String in the format Collection = NameForCollection|FormType|Keyword
+			 * \return                          - True, if everything went fine.
+			 */
+			bool parseCollection(const std::string& entry);
 			/**
 			 * \brief Adds Filter to internal structure based on string entry. String is validated.
 			 * \param entry                     - String in the format NameFilter|+/-Plugin, +/-Plugin, etc.
@@ -370,6 +378,9 @@ namespace flm
 						continue;
 
 					if(addIfKeyIs(lowercase_key, sanitized_entry, EntryType::GROUP))
+						continue;
+
+					if(addIfKeyIs(lowercase_key, sanitized_entry, EntryType::COLLE))
 						continue;
 
 					if(addIfKeyIs(lowercase_key, sanitized_entry, EntryType::FILTR))
@@ -580,6 +591,7 @@ namespace flm
 					  total_dup_forms);
 			log::Info("{} FromLists Aliases added, {} duplicates, {} not existing.", aliases_.size(), infos_[ift::ALIASES_DUP], infos_[ift::ALIASES_NE]);
 			log::Info("{} Forms Groups added, {} duplicates, {} not existing/invalid.", groups_.size(), infos_[ift::GROUPS_DUP], infos_[ift::GROUPS_NE]);
+			log::Info("{} Forms Collections added, {} duplicates, {} not existing/invalid.", collections_.size(), infos_[ift::COLLE_DUP], infos_[ift::COLLE_NE]);
 			log::Info("{} Filters added, {} duplicates, {} not existing/invalid.", filters_.size(), infos_[ift::FILTERS_DUP], infos_[ift::FILTERS_NE]);
 			log::Info("{} new Mod Events added, skipped {} invalid.", infos_[ift::MODEV], infos_[ift::MODEV_INV]);
 		}
@@ -794,6 +806,20 @@ namespace flm
 						forms.emplace_back(form);
 				}
 			}
+			else if(fs.starts_with("#"))
+			{
+                std::string tmp = fs;
+				tmp.erase(0, 1);
+				if(collections_.contains(tmp))
+				{
+					forms.insert(forms.end(), collections_[tmp].begin(), collections_[tmp].end());
+				}
+				else
+				{
+					log::Error("Unknown Collection: {}.", tmp);
+					infos_[ift::COLLE_NE]++;
+				}
+			}
 			else
 			{
 				auto form = FindForm(fs);
@@ -822,6 +848,55 @@ namespace flm
 		else
 		{
 			log::Info("Forms Group \"{}\" was omitted because it does not have valid Forms.", group_info);
+			return false;
+		}
+
+		return true;
+	}
+
+	inline bool flm::Manipulator::parseCollection(const std::string& entry)
+	{
+		const auto sections = string::split(entry, "|");
+		if(sections.size() != 3)
+		{
+			log::Error("Wrong Collection format. Expected 3 sections, got {}.", sections.size());
+			return false;
+		}
+
+		bool duplicate = false;
+		const auto& collection_info = sections[0];
+
+		if(collections_.contains(collection_info))
+		{
+			log::Error("Collection {} exists.", collection_info);
+			infos_[ift::COLLE_DUP]++;
+			duplicate = true;
+		}
+
+		const auto& forms_info = sections[1];
+		const auto forms_sections = string::split(forms_info, ",");
+		std::vector<RE::TESForm*> forms;
+		int missing = 0;
+		for(auto& fs : forms_sections)
+		{
+            //TODO: Finding Forms.
+		}
+
+		if(duplicate)
+		{
+			log::Warn("Entry will be omitted due to incorrect Collection name.");
+			return false;
+		}
+
+		if(!forms.empty())
+		{
+			collections_.emplace(std::piecewise_construct, std::forward_as_tuple(collection_info), std::forward_as_tuple(forms));
+			if(log::debug_mode)
+				log::Info("Forms Collection \"{}\" added with {} Forms, {} missing Forms.", collection_info, forms.size(), missing);
+		}
+		else
+		{
+			log::Info("Forms Collection \"{}\" was omitted because it does not have valid Forms.", collection_info);
 			return false;
 		}
 
@@ -1124,14 +1199,26 @@ namespace flm
 	{
 		if(entry.starts_with("#"))
 		{
+            bool not_found = true;
 			entry.erase(0, 1);
 			if(groups_.contains(entry))
-				forms.insert(forms.end(), groups_[entry].begin(), groups_[entry].end());
-			else
 			{
-				log::Error("Unknown Group: {}.", entry);
+				forms.insert(forms.end(), groups_[entry].begin(), groups_[entry].end());
+				not_found = false;
+			}
+
+			if(collections_.contains(entry))
+			{
+				forms.insert(forms.end(), collections_[entry].begin(), collections_[entry].end());
+				not_found = false;
+			}
+
+			if(not_found)
+			{
+				log::Error("Unknown Group/Collection: {}.", entry);
 				infos_[ift::GROUPS_NE]++;
-				return -2;
+                infos_[ift::COLLE_NE]++;
+                return -2;
 			}
 		}
 		else if(entry.starts_with("*"))
