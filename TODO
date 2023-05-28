@@ -12,4 +12,4 @@
 ☐ Check if #Group is EditorID name.
 ☐ Check if *FormList is EditorID name.
 ☐ Remove Forms functionality.
-☐ Add a function to FormList Manipulator to pick out all forms with a specific keyword and add them to a formlist. Need to work with SPID and KID.
+✔ Add a function to FormList Manipulator to pick out all forms with a specific keyword and add them to a formlist. Need to work with SPID and KID.

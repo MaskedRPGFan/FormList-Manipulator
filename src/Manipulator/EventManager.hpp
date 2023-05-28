@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Utility/Utility.hpp"
+#include "Manipulator.hpp"
 
 namespace flm
 {
@@ -17,7 +17,7 @@ namespace flm
 			 * \brief Returns Mod Events.
 			 * \return Mod Events.
 			 */
-			ModEvents& Events();
+			MapModEvents& Events();
 
 		protected:
 			/**
@@ -28,8 +28,6 @@ namespace flm
 			RE::BSEventNotifyControl ProcessEvent(const SKSE::ModCallbackEvent* aEvent, RE::BSTEventSource<SKSE::ModCallbackEvent>*) override;
 
 		private:
-			ModEvents mod_events_; /* All valid Forms with ModEvents. */
-
 			EventManager(const EventManager&) = delete;
 			EventManager(EventManager&&) = delete;
 			EventManager& operator=(const EventManager&) = delete;
@@ -38,10 +36,10 @@ namespace flm
 
 	inline RE::BSEventNotifyControl EventManager::ProcessEvent(const SKSE::ModCallbackEvent* aEvent, RE::BSTEventSource<SKSE::ModCallbackEvent>*)
 	{
-		if(auto event_name = aEvent->eventName.c_str(); aEvent && mod_events_.contains(event_name))
+		if(auto event_name = aEvent->eventName.c_str(); aEvent && manipulator.GetModEvents().contains(event_name))
 		{
 			logger::info("Got event: {}, strArg: {}, numArg: {}.", event_name, aEvent->strArg, aEvent->numArg);
-			auto [added, duplicates] = AddGeneric(mod_events_[event_name]);
+			auto [added, duplicates] = AddGeneric(manipulator.GetModEvents()[event_name]);
 
 			const auto sent_event_name = fmt::format("{}OK", event_name);
 			const SKSE::ModCallbackEvent mod_event{
@@ -54,12 +52,17 @@ namespace flm
 			SKSE::GetModCallbackEventSource()->SendEvent(&mod_event);
 			logger::info("Sent event: {}.", sent_event_name);
 		}
+		else if(aEvent && kid && aEvent->eventName == "KID_KeywordDistributionDone")
+		{
+			logger::info("Starting FLM distribution since KID is done...");
+
+			manipulator.FindAll();
+			manipulator.AddAll();
+            manipulator.SendEventDone();
+		}
 
 		return RE::BSEventNotifyControl::kContinue;
 	}
 
-	inline ModEvents& EventManager::Events()
-	{
-		return mod_events_;
-	}
+	inline EventManager event_manager; /* Manages sending and receiving mod events. */
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Types\EntryType.hpp"
+#include "EntryType.hpp"
 
 namespace flm
 {

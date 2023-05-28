@@ -1,6 +1,7 @@
 #include "Plugin.hpp"
 
 #include "Manipulator/RegisterFuncs.hpp"
+#include "Manipulator/EventManager.hpp"
 #include "MergeMapperPluginAPI.h"
 
 namespace
@@ -15,8 +16,15 @@ namespace
 		// After all the ESM/ESL/ESP plugins are loaded.
 		if(event->type == SKSE::MessagingInterface::kDataLoaded)
 		{
-			flm::manipulator.FindAll();
-			flm::manipulator.AddAll();
+            if(!flm::CheckPo3Kid())
+            {
+				flm::manipulator.FindAll();
+				flm::manipulator.AddAll();
+				flm::manipulator.SendEventDone();
+            }
+			else
+				flm::log::Info(("KID is installed, waiting for KID to finish distribution..."));
+
 		}
 		// When Skyrim starts, SKSE will begin by querying for SKSE plugins and then calling each plugin's SKSEPlugin_Load function.
 		// Once all load functions are called this message is sent.
@@ -84,7 +92,7 @@ extern "C" [[maybe_unused]] DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::L
 	SKSE::Init(skse);
 	SKSE::GetMessagingInterface()->RegisterListener(OnEvent);
 	SKSE::GetPapyrusInterface()->Register(papyrus::RegisterFunctions);
-	SKSE::GetModCallbackEventSource()->AddEventSink(&flm::manipulator.GetEventManager());
+	SKSE::GetModCallbackEventSource()->AddEventSink(&flm::event_manager);
 
 	return true;
 }

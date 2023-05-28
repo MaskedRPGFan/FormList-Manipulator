@@ -23,9 +23,9 @@ namespace flm
 	 * \param pluginName    - Checks whether the specified plugin is active in the current mod list.
 	 * \return              = True, if plugin is loaded or merged.
 	 */
-	inline bool LookupLoadedModByName(const std::string_view& pluginName)
+	inline bool LookupLoadedModByName(const std::string_view pluginName)
 	{
-		static const auto data_handler = RE::TESDataHandler::GetSingleton();
+        static const auto data_handler = RE::TESDataHandler::GetSingleton();
 		if(!data_handler)
 			return false;
 		const auto normal = data_handler->LookupLoadedModByName(pluginName);
@@ -300,5 +300,40 @@ namespace flm
 		}
 
 		return -1;
+	}
+
+	/**
+	 * \brief Load all keywords to cache.
+	 * \param cache                     - Cache where keywords will be loaded.
+	 */
+	inline void LoadKeywords(MapKeywords& cache)
+	{
+        static const auto data_handler = RE::TESDataHandler::GetSingleton();
+		if(!data_handler)
+			return;
+
+		for(const auto& kwd : data_handler->GetFormArray<RE::BGSKeyword>())
+		{
+			if(kwd)
+			{
+				if(const auto editor_id = kwd->GetFormEditorID(); !string::is_empty(editor_id))
+					cache[editor_id] = kwd;
+				else
+				{
+					if(const auto file = kwd->GetFile(0))
+					{
+						const auto mod_name = file->GetFilename();
+						const auto form_id = kwd->GetLocalFormID();
+						std::string merge_details;
+						if(g_mergeMapperInterface && g_mergeMapperInterface->isMerge(mod_name.data()))
+						{
+							const auto [mergedModName, mergedFormID] = g_mergeMapperInterface->GetOriginalFormID(mod_name.data(), form_id);
+							merge_details = std::format("->0x{:X}~{}", mergedFormID, mergedModName);
+						}
+						log::Warn("[0x{:X}~{}{}] keyword has an empty editorID!", form_id, mod_name, merge_details);
+					}
+				}
+			}
+		}
 	}
 }

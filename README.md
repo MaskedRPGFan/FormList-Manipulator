@@ -8,6 +8,8 @@ As of version 1.3.0, you can use Mod Events to update FormLists on demand during
 
 As of version 1.5.0, you can add filters to entries in order to skip them.
 
+As of version 1.7.0, you can create collections of forms using tags.
+
 ## Config Files
 
 Configuration files can have any name, but they must be INI files whose name ends with _FLM. Example: Toys_FLM.ini.
@@ -15,13 +17,13 @@ Configuration files can have any name, but they must be INI files whose name end
 Or they can be any INI files located in the "FLM" directory.
 Configuration files are processed in alphabetical order. First from the Data directory, then from the Data\FLM.
 
-Keys: Alias, Group, Filter, ModEvent, FormList, Plant, BToys, GToys, HairColors, AtronachForge, AtronachForgeSigil, DragonbornSpiderCrafting are not case-sensitive.
+Keys: Alias, Group, Collection, Filter, ModEvent, FormList, Plant, BToys, GToys, HairColors, AtronachForge, AtronachForgeSigil, DragonbornSpiderCrafting are not case-sensitive.
 Filters, Aliases and Groups, once defined, remain available for other INI files.
 Filter is always optional.
 
 ##  General usage
 
-```FormList = FList|Form, Form, *FormList, #Group, etc|Filter```
+```FormList = FList|Form, Form, #Group, #Collection, etc|Filter```
 
 where,
 * FList can be: EditorID or FormID~ESP or Alias.
@@ -29,7 +31,6 @@ where,
 * FormID - record ID. Example: 0xD80 or 0x03008246 or 0xFE00080A or 0x8246 (You no longer need to remove any digits from FormID, the plugin will do it automatically).
 * ESP - name of the plugin with extension. Not required for base plugins and DLC. Example Unofficial Skyrim Special Edition Patch.esp. Not case-sensitive.
 * EditorID - form editorID.
-* Adding an asterisk before a list adds its contents instead of the list itself.
 * Filter is optional. You can use previously defined filter or create a new filter in place.
 * Filter format: Condition,Condition, etc or #NameForFilter. To learn more about the filter format, see the Filters section below.
 
@@ -37,7 +38,8 @@ FList  is skipped if is not found. Form is skipped if it already exists in FormL
 
 ## Filters
 
-'''Filter = NameForFilter|Condition,Condition, etc'''
+```Filter = NameForFilter|Condition, Condition, etc```
+
 where,
 * The condition is the name of the plugin with + if the plugin must be activated or - if not. Example: +Vigilant.esm.
 * You can use & to check multiple plugins in one condition. In this case, all plugin states (+ or -) must match for the condition to be true. Example: -Vigilant.esm&+Skyrim Cheat Engine.esp.
@@ -45,8 +47,19 @@ where,
 
 To use a predefined filter, add the # sign before its name.
 
+## Collections
+
+```Collection = NameForCollection|FormType|Keyword, -Keyword, etc|Filter```
+
+where,
+* FormType type of form to search for forms with the keyword. Can be (case insensitive): Armor, Weapon, Ammo, MagicEffect, AlchemyItem, Scroll, Location, Ingredient, Book, Misc, Key, Soulgem, Activator, Flora, Furniture, Race, TalkingActivator, Enchantment, NPC, Spell.
+* Keyword is FormID or EditorID of keyword. Combined by conjunction. This means that the form must contain all keywords without the minus sign and none with it.
+* Filter is optional. You can use previously defined filter or create a new filter in place. Filter format: Condition, Condition, etc or #NameForFilter. To learn more about the filter format, see the Filters section above.
+
+To use a predefined filter, add the # sign before its name.
+
 ## Mod Events
-```ModEvent = EventName|FList|Form, Form, *FormList, #Group, etc```
+```ModEvent = EventName|FList|Form, Form, #Group, #Collection, etc```
 
 where,
 * EventName is a string of letters A-Z, a-z.
@@ -63,9 +76,9 @@ Aliases are collections of FormLists. To use an Alias add the # sign before its 
 
 ##  Groups
 
-```Group = NameForGroup|Form, Form, *FormList, etc```
+```Group = NameForGroup|Form, Form, etc```
 
-Groups are collections of Forms. To use a Group add the # sign before its name. Groups are processed at the beginning of the configuration file, regardless of their position in the file. For FormList, ModEvent, BToy, GToy, HairColors, AtronachForge, AtronachForgeSigil keywords.
+Groups are collections of Forms. To use a Group add the # sign before its name. Groups are processed at the beginning of the configuration file, after collections and filters, regardless of their position in the file. For FormList, ModEvent, BToy, GToy, HairColors, AtronachForge, AtronachForgeSigil keywords. Groups can use the Collections.
 
 ## Simplified usage for Plants:
 
@@ -78,16 +91,16 @@ where,
 
 ## Simplified usage for Boy's Toys:
 
-```BToys = Form, Form, *FormList, #Group, etc|Filter```
+```BToys = Form, Form, #Group, #Collection, etc|Filter```
 
 ## Simplified usage for Girl's Toys:
 
-```GToys = Form, Form, *FormList, #Group, etc|Filter```
+```GToys = Form, Form, #Group, #Collection, etc|Filter```
 
 
 ## Simplified usage for Hair Colors:
 
-```HairColors = Form, Form, *FormList, #Group, etc|Filter```
+```HairColors = Form, Form, #Group, #Collection, etc|Filter```
 
 ## Simplified usage for Atronach Forge:
 
@@ -125,6 +138,11 @@ To enable debug mode to see more details, create the FormListManipulator_DEBUG.i
 
 ## Examples:
 ```
+Formlist = #TestAlias|#Dolls
+Collection = Irons|Weapon|0x1E718
+Collection = WarAxes|Weapon|WeapTypeWarAxe
+Collection = IronWarAxes|Weapon|0x0001E718~Skyrim.esm,WeapTypeWarAxe
+Collection = IronNotWarAxes|Weapon|WeapMaterialIron,-WeapTypeWarAxe
 ModEvent = TestEvent|BYOHRelationshipAdoptionPlayerGiftChildMale|BYOHChefDoll
 Alias = TestAlias|0x8246~HearthFires.esm,0x03008246
 Group = Dolls|BYOHChefDoll,BYOHDBDoll,BYOHDragonbornDoll,BYOHJesterDoll
@@ -132,7 +150,6 @@ FormList = #TestAlias|BYOHBlacksmithDoll,BYOHDragonPriestDoll,BYOHExecutionerDol
 BToys = #Dolls
 Plant = zzzCHMountainFlower01White|zzzCHTreeFloraWhiteFlowers
 FormList = 0x03008246|0x807~Plantable Animals.esp,PlantableAnimalsAlbinoSpiderNest
-Formlist = #TestAlias|#Dolls
 Plant = ChaurusEggs|PlantableAnimalsChaurusNest
 Filter = AdditionalHearthfireDollsFilter|+AdditionalHearthfireDolls.esp
 BTOYS = BYOHChefDoll,BYOHDBDoll,BYOHDragonbornDoll,BYOHJesterDoll|#AdditionalHearthfireDollsFilter
@@ -143,7 +160,9 @@ Plant = SF_BunglersBane|SF_BYOHHouseIngrdBunglersBane01|+TechnicolorAlchemy.esp
 Take a look at the log: "[PATH to MY Documents]\My Games\Skyrim Special Edition\SKSE\FormListManipulator.log". It contains all the information about the processed files and records.
 
 ## Compatibility
-Created with [CommonLibSSE-NG](https://github.com/CharmedBaryon/CommonLibSSE-NG), support SE, AE, VR, but only SE was tested.
+* KID support. FLM will start working after KID finishes adding tags.
+* FLM will send event FLM_SetupDone when it finishes work.
+* Created with [CommonLibSSE-NG](https://github.com/CharmedBaryon/CommonLibSSE-NG), support SE, AE, VR, but only SE was tested.
 
 ## Benefits
 * easy of use - config files instead of plugins,

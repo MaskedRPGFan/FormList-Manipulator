@@ -1,7 +1,8 @@
 #pragma once
 
-#include "EventManager.hpp"
+#include "Utility/Types/FormType.hpp"
 #include "Utility/Types/Types.hpp"
+#include "Utility/Utility.hpp"
 
 namespace flm
 {
@@ -25,12 +26,16 @@ namespace flm
 			 * \brief Returns manager for Mod Events.
 			 * \return Manager for Mod Events.
 			 */
-			EventManager& GetEventManager();
+			MapModEvents& GetModEvents();
+
+			/**
+			 * \brief Sending a mod event to inform other mods that the FLM has completed its work.
+			 */
+			static void SendEventDone();
 
 		private:
 			std::array<int, ift::ALL> infos_{}; /* Store values for types of countable statistics.*/
-			FormsLists lists_;                /* FormLists from Skyrim for use in simplified entries. */
-			EventManager event_manager_;      /* Manages sending and receiving mod events. */
+			FormsLists lists_;                  /* FormLists from Skyrim for use in simplified entries. */
 
 			const std::array<ParseEntryCallback, EntryType::ALL> add_callbacks_{
 				std::bind(&Manipulator::parseAlias, this, std::placeholders::_1),                    /* Aliases for FormLists. */
@@ -48,18 +53,24 @@ namespace flm
 				std::bind(&Manipulator::parseDragonbornSpiderCrafting, this, std::placeholders::_1), /* Dragonborn Spider Crafting. */
 			};                                                                                       /* Functions used to parse entries. */
 
-			std::map<std::string, FormsLists> aliases_; /* All valid Aliases. */
-			std::map<std::string, Forms> groups_;       /* All valid Groups. */
-			std::map<std::string, Forms> collections_;  /* All valid Collections. */
-			std::map<std::string, bool> filters_;       /* All valid Filters. */
-			FormListsData form_lists_;                  /* All valid Forms for FormLists. */
-			std::vector<FormPair> plants_;              /* All valid Forms with seeds and plants. */
-			Forms boy_toys_;                            /* All valid Forms with boy's toys. */
-			Forms girl_toys_;                           /* All valid Forms with girl's toys. */
-			Forms hair_colors_;                         /* All valid Forms with hair colors. */
-			FormsPairs atronach_forge_;                 /* All valid Forms with recipes and results for Atronach Forge. */
-			FormsPairs atronach_sigil_forge_;           /* All valid Forms with recipes and results for Atronach Forge with Sigil. */
-			FormsPairs dragon_spider_crafting_;         /* All valid Forms with recipes and results for Dragonborn Spider Crafting. */
+			StringMap<FormsLists> aliases_;     /* All valid Aliases. */
+			MapForms groups_;                   /* All valid Groups. Share names with Collections. */
+			MapForms collections_;              /* All valid Collections. Share names with Groups. */
+			MapModEvents mod_events_;           /* All valid Forms with ModEvents. */
+			StringMap<bool> filters_;           /* All valid Filters. */
+			FormListsData form_lists_;          /* All valid Forms for FormLists. */
+			FormsPairs plants_;                 /* All valid Forms with seeds and plants. */
+			Forms boy_toys_;                    /* All valid Forms with boy's toys. */
+			Forms girl_toys_;                   /* All valid Forms with girl's toys. */
+			Forms hair_colors_;                 /* All valid Forms with hair colors. */
+			FormsPairs atronach_forge_;         /* All valid Forms with recipes and results for Atronach Forge. */
+			FormsPairs atronach_sigil_forge_;   /* All valid Forms with recipes and results for Atronach Forge with Sigil. */
+			FormsPairs dragon_spider_crafting_; /* All valid Forms with recipes and results for Dragonborn Spider Crafting. */
+			CollectionData collections_data_;   /* All valid data for Collections. */
+			MapKeywords keywords_cache_;        /* All valid keywords. */
+
+			/* All valid Collections names for FormTypes. */
+			StringMapSet collections_form_types_;
 
 			/**
 			 * \brief Clears data related to added game forms.
@@ -118,7 +129,7 @@ namespace flm
 			 * \param formType                  - Type of Forms that are added.
 			 * \param infos                     - The type of information referring to the type of added and duplicated forms, is used to count correctly added/duplicated forms.
 			 */
-			void addForms(const std::string_view& header, const std::string_view& name, const Forms& forms, const Flt formType, InfoTPair infos);
+			void addForms(const std::string_view header, const std::string_view name, const Forms& forms, const Flt formType, InfoTPair infos);
 			/**
 			 * \brief Adds pair of forms to the game.
 			 * \param header                    - Header of Forms that are added.
@@ -127,7 +138,7 @@ namespace flm
 			 * \param formTypes                 - Forms pair types that are added.
 			 * \param infos                     - The type of information referring to the type of added and duplicated forms, is used to count correctly added/duplicated forms.
 			 */
-			void addFormPair(const std::string_view& header, const StringViewPair& names, FormsPairs& forms, FltPair formTypes, InfoTPair infos);
+			void addFormPair(const std::string_view header, const StringViewPair& names, FormsPairs& forms, FltPair formTypes, InfoTPair infos);
 			/**
 			 * \brief Adds Form and FromList to internal structure based on string entry. String is validated.
 			 * \param entry                     - String in the format FList|Form, Form, #Group, etc.
@@ -167,10 +178,23 @@ namespace flm
 			bool parseGroup(const std::string& entry);
 			/**
 			 * \brief Adds Collection to internal structure based on string entry. String is validated.
-			 * \param entry                     - String in the format Collection = NameForCollection|FormType|Keyword
+			 * \param entry                     - String in the format Collection = NameForCollection|FormType|Keyword/s[|Filter]
 			 * \return                          - True, if everything went fine.
 			 */
 			bool parseCollection(const std::string& entry);
+			/**
+			 * \brief Adds Forms to collections of specific type (Armor, Weapon, etc) based on tags.
+			 * \tparam T                        - Class of collection type (RE::TESObjectARMO, RE::TESObjectWEAP, etc).
+			 * \param formType                  - Collection type (Armor, Weapon, etc).
+			 * \return 
+			 */
+			template<class T>
+			bool addParsedCollection(std::string_view formType);
+			/**
+			 * \brief Adds Forms to collections based on tags.
+			 * \return                          - True, if all collections were created successfully.
+			 */
+			bool addAllParsedCollections();
 			/**
 			 * \brief Adds Filter to internal structure based on string entry. String is validated.
 			 * \param entry                     - String in the format NameFilter|+/-Plugin, +/-Plugin, etc.
@@ -214,7 +238,7 @@ namespace flm
 			 * \param list                      - The list to which the correct Forms will be added.
 			 * \return                          - True, if everything went fine.
 			 */
-			bool parseList(const std::string& entry, const std::string_view& entryName, std::vector<RE::TESForm*>& list);
+			bool parseList(const std::string entry, std::string_view entryName, Forms& list);
 			/**
 			 * \brief Adds recipe and result to internal structure based on string entry. String is validated.
 			 * \param entry                     - String in the format Recipe|Result.
@@ -223,14 +247,14 @@ namespace flm
 			 * \param plantTypesWarn            - If True, checks pair form types for seed and plant.
 			 * \return                          - True, if everything went fine.
 			 */
-			bool parsePair(const std::string& entry, const PairEntryNames& names, std::vector<FormPair>& list, bool plantTypesWarn = false);
+			bool parsePair(const std::string& entry, const PairEntryNames& names, FormsPairs& list, bool plantTypesWarn = false);
 			/**
 			 * \brief Parse form entry.
 			 * \param entry                 - Entry to parse.
 			 * \param forms                 - Forms vector, where the found forms will be added.
 			 * \return                      - 0 if the entry is valid, -1 if the form is missing, -2 if the group is missing.
 			 */
-			int parseFormEntry(std::string& entry, std::vector<RE::TESForm*>& forms);
+			int parseFormEntry(std::string& entry, Forms& forms);
 			/**
 			 * \brief Adds From to FormList. Duplicates are omitted.
 			 * \param list                      - FromList where Form will be added.
@@ -269,6 +293,17 @@ namespace flm
 		infos_[ift::FORMS_ADD] += added;
 		infos_[ift::FORMS_DUP] += duplicates;
 		summary();
+	}
+
+	inline MapModEvents& Manipulator::GetModEvents()
+	{
+		return mod_events_;
+	}
+
+	inline void Manipulator::SendEventDone()
+	{
+		const SKSE::ModCallbackEvent mod_event{ "FLM_SetupDone", {}, 0.0f, nullptr };
+		SKSE::GetModCallbackEventSource()->SendEvent(&mod_event);
 	}
 
 	inline void Manipulator::clearDataInfo()
@@ -320,30 +355,118 @@ namespace flm
 		}
 
 		log::Header("Looking for configs"sv);
-		std::vector<std::string> files;
-		auto constexpr folder = R"(Data\)";
-		for(const auto& entry : std::filesystem::directory_iterator(folder))
-			if(entry.exists() && !entry.path().empty() && entry.path().extension() == ".ini"sv)
-				if(const auto path = entry.path().string(); path.rfind("_FLM") != std::string::npos)
-					files.push_back(path);
+		Strings configs = clib_util::distribution::get_configs(R"(Data\)", "_FLM"sv);
 
-		auto constexpr folderFLM = R"(Data\FLM)";
-		if(std::filesystem::directory_entry(folderFLM).exists())
-			for(const auto& entry : std::filesystem::directory_iterator(folderFLM))
+		if(auto constexpr folder_flm = R"(Data\FLM)"; std::filesystem::directory_entry(folder_flm).exists())
+			for(const auto iterator = std::filesystem::directory_iterator(folder_flm); const auto& entry : iterator)
 				if(entry.exists() && !entry.path().empty() && entry.path().extension() == ".ini"sv)
-					files.push_back(entry.path().string());
+				{
+					if(entry.path().string() == "FormListManipulator_DEBUG.ini"sv)
+						continue;
+					configs.push_back(entry.path().string());
+				}
 
-		if(files.empty())
+		if(configs.empty())
 		{
 			log::Warn("Configs not found!");
 			return;
 		}
 		else
-			log::Info("Found {} configs.", files.size());
+			log::Info("Found {} configs.", configs.size());
 
+		if(log::debug_mode)
+			log::Header("Looking for keywords"sv);
+
+		LoadKeywords(keywords_cache_);
+
+		if(log::debug_mode)
+		{
+			log::Info("Found {} keywords.", keywords_cache_.size());
+            log::Header();
+		}
+
+		log::Header("Processing configs for filters & collections"sv);
 		log::indent_level++;
 
-		for(auto& path : files)
+		for(auto& path : configs)
+		{
+			CSimpleIniA ini;
+			ini.SetUnicode();
+			ini.SetMultiKey();
+
+			if(const auto rc = ini.LoadFile(path.c_str()); rc < 0)
+			{
+				log::Error("Can't read ini {}.", path);
+				continue;
+			}
+
+
+			log::Info("Processing {}...", path);
+			log::indent_level++;
+
+			if(auto values = ini.GetSection(""); values)
+			{
+				int valid_entries = infos_[ift::ENTRIES_V];    /* How many valid entries is. */
+				int invalid_entries = infos_[ift::ENTRIES_IN]; /* How many invalid entries is. */
+				int filtered_out = infos_[ift::ENTRIES_FO];    /* How many entries did not meet criteria. */
+
+				// Parse Filters first.
+				for(auto& [key, entry] : *values)
+				{
+					std::string sanitized_entry = Sanitize(entry);
+					std::string lowercase_key = key.pItem;
+					ToLower(lowercase_key);
+
+					if(addIfKeyIs(lowercase_key, sanitized_entry, EntryType::FILTR))
+						continue;
+				}
+
+				// Parse Collections next.
+				for(auto& [key, entry] : *values)
+				{
+					std::string sanitized_entry = Sanitize(entry);
+					std::string lowercase_key = key.pItem;
+					ToLower(lowercase_key);
+
+					if(addIfKeyIs(lowercase_key, sanitized_entry, EntryType::COLLE))
+						continue;
+				}
+
+				valid_entries = infos_[ift::ENTRIES_V] - valid_entries;
+				invalid_entries = infos_[ift::ENTRIES_IN] - invalid_entries;
+				filtered_out = infos_[ift::ENTRIES_FO] - filtered_out;
+				log::Info("Finished, {} valid entries found, {} invalid, {} filtered out.", valid_entries, invalid_entries, filtered_out);
+			}
+			else
+				log::Info("Config file is empty.");
+
+			log::indent_level--;
+		}
+
+		log::indent_level--;
+        log::Header();
+
+		if(addAllParsedCollections())
+		{
+			if(log::debug_mode)
+			{
+                log::Header("Adding forms to collections");
+				log::indent_level++;
+				log::Info("Added {} Collections.", collections_.size());
+				for(const auto& c : collections_)
+					log::Info("Collection {} ==> forms: {}.", c.first, c.second.size());
+				log::indent_level--;
+                log::Header();
+			}
+
+		}
+		else
+			log::Error("Error during Collections adding.");
+
+		log::Header("Processing configs"sv);
+		log::indent_level++;
+
+		for(auto& path : configs)
 		{
 			CSimpleIniA ini;
 			ini.SetUnicode();
@@ -367,7 +490,7 @@ namespace flm
 				int invalid_entries = infos_[ift::ENTRIES_IN]; /* How many invalid entries is. */
 				int filtered_out = infos_[ift::ENTRIES_FO];    /* How many entries did not meet criteria. */
 
-				// Parse Aliases and Groups first.
+				// Parse Aliases and Groups next.
 				for(auto& [key, entry] : *values)
 				{
 					std::string sanitized_entry = Sanitize(entry);
@@ -378,12 +501,6 @@ namespace flm
 						continue;
 
 					if(addIfKeyIs(lowercase_key, sanitized_entry, EntryType::GROUP))
-						continue;
-
-					if(addIfKeyIs(lowercase_key, sanitized_entry, EntryType::COLLE))
-						continue;
-
-					if(addIfKeyIs(lowercase_key, sanitized_entry, EntryType::FILTR))
 						continue;
 				}
 
@@ -482,7 +599,7 @@ namespace flm
 		addFormPair("DRAGONBORN SPIDER CRAFTING"sv, std::make_pair("Recipe"sv, "Result"sv), dragon_spider_crafting_, std::make_pair(FormListType::DSREC, FormListType::DSRES), std::make_pair(ift::DSREC_ADD, ift::DSREC_DUP));
 	}
 
-	inline void Manipulator::addForms(const std::string_view& header, const std::string_view& name, const Forms& forms, const Flt formType, const InfoTPair infos)
+	inline void Manipulator::addForms(const std::string_view header, const std::string_view name, const Forms& forms, const Flt formType, const InfoTPair infos)
 	{
 		if(log::operating_mode == OperatingMode::INITIALIZE)
 		{
@@ -513,7 +630,7 @@ namespace flm
 		}
 	}
 
-	inline void Manipulator::addFormPair(const std::string_view& header, const StringViewPair& names, FormsPairs& forms, const FltPair formTypes, const InfoTPair infos)
+	inline void Manipulator::addFormPair(const std::string_view header, const StringViewPair& names, FormsPairs& forms, const FltPair formTypes, const InfoTPair infos)
 	{
 		if(log::operating_mode == OperatingMode::INITIALIZE)
 		{
@@ -589,10 +706,10 @@ namespace flm
 					  infos_[ift::FORMS] - total_dup_forms,
 					  infos_[ift::FORMS_MISS],
 					  total_dup_forms);
+			log::Info("{} Filters added, {} duplicates, {} not existing/invalid.", filters_.size(), infos_[ift::FILTERS_DUP], infos_[ift::FILTERS_NE]);
+			log::Info("{} Forms Collections added, {} duplicates, {} not existing/invalid.", collections_.size(), infos_[ift::COLLE_DUP], infos_[ift::COLLE_NE]);
 			log::Info("{} FromLists Aliases added, {} duplicates, {} not existing.", aliases_.size(), infos_[ift::ALIASES_DUP], infos_[ift::ALIASES_NE]);
 			log::Info("{} Forms Groups added, {} duplicates, {} not existing/invalid.", groups_.size(), infos_[ift::GROUPS_DUP], infos_[ift::GROUPS_NE]);
-			log::Info("{} Forms Collections added, {} duplicates, {} not existing/invalid.", collections_.size(), infos_[ift::COLLE_DUP], infos_[ift::COLLE_NE]);
-			log::Info("{} Filters added, {} duplicates, {} not existing/invalid.", filters_.size(), infos_[ift::FILTERS_DUP], infos_[ift::FILTERS_NE]);
 			log::Info("{} new Mod Events added, skipped {} invalid.", infos_[ift::MODEV], infos_[ift::MODEV_INV]);
 		}
 		else if(log::operating_mode == OperatingMode::NEW_GAME)
@@ -623,14 +740,9 @@ namespace flm
 		log::Header(" ^_^ "sv);
 	}
 
-	inline EventManager& Manipulator::GetEventManager()
-	{
-		return event_manager_;
-	}
-
 	inline bool Manipulator::parseFormList(const std::string& entry)
 	{
-		const auto sections = string::split(entry, "|");
+		const Strings sections = string::split(entry, "|"sv);
 		if(sections.size() != 2 && sections.size() != 3)
 		{
 			log::Error("Wrong FormList format. Expected 2 or 3 sections, got {}.", sections.size());
@@ -644,7 +756,7 @@ namespace flm
 				return res == 0 ? false : true;
 
 		auto form_list_info = sections[0];
-		std::vector<RE::BGSListForm*> form_lists;
+		FormsLists form_lists;
 
 		if(form_list_info.starts_with("#"))
 		{
@@ -671,8 +783,8 @@ namespace flm
 		}
 
 		const auto& forms_info = sections[1];
-		auto forms_sections = string::split(forms_info, ",");
-		std::vector<RE::TESForm*> forms;
+		Strings forms_sections = string::split(forms_info, ",");
+		Forms forms;
 		int missing = 0;
 		for(auto& fs : forms_sections)
 			if(parseFormEntry(fs, forms) == -1)
@@ -713,7 +825,7 @@ namespace flm
 
 	inline bool Manipulator::parseAlias(const std::string& entry)
 	{
-		const auto sections = string::split(entry, "|");
+		const Strings sections = string::split(entry, "|"sv);
 		if(sections.size() != 2)
 		{
 			log::Error("Wrong Alias format. Expected 2 sections, got {}.", sections.size());
@@ -730,8 +842,8 @@ namespace flm
 		}
 
 		const auto& form_lists_info = sections[1];
-		const auto form_lists_sections = string::split(form_lists_info, ",");
-		std::vector<RE::BGSListForm*> form_lists;
+		const Strings form_lists_sections = string::split(form_lists_info, ",");
+		FormsLists form_lists;
 		int missing = 0;
 		for(auto& fs : form_lists_sections)
 		{
@@ -768,7 +880,7 @@ namespace flm
 
 	inline bool Manipulator::parseGroup(const std::string& entry)
 	{
-		const auto sections = string::split(entry, "|");
+		const Strings sections = string::split(entry, "|"sv);
 		if(sections.size() != 2)
 		{
 			log::Error("Wrong Group format. Expected 2 sections, got {}.", sections.size());
@@ -786,14 +898,14 @@ namespace flm
 		}
 
 		const auto& forms_info = sections[1];
-		const auto forms_sections = string::split(forms_info, ",");
-		std::vector<RE::TESForm*> forms;
+		const Strings forms_sections = string::split(forms_info, ",");
+		Forms forms;
 		int missing = 0;
 		for(auto& fs : forms_sections)
 		{
-            if(fs.starts_with("*"))
+			if(fs.starts_with("*"))
 			{
-                std::string tmp = fs;
+				std::string tmp = fs;
 				tmp.erase(0, 1);
 				if(const auto form_list = FindForm<RE::BGSListForm>(tmp); !form_list)
 				{
@@ -808,7 +920,7 @@ namespace flm
 			}
 			else if(fs.starts_with("#"))
 			{
-                std::string tmp = fs;
+				std::string tmp = fs;
 				tmp.erase(0, 1);
 				if(collections_.contains(tmp))
 				{
@@ -856,48 +968,173 @@ namespace flm
 
 	inline bool flm::Manipulator::parseCollection(const std::string& entry)
 	{
-		const auto sections = string::split(entry, "|");
-		if(sections.size() != 3)
+		const Strings sections = string::split(entry, "|"sv);
+		if(sections.size() != 3 && sections.size() != 4)
 		{
-			log::Error("Wrong Collection format. Expected 3 sections, got {}.", sections.size());
+			log::Error("Wrong Collection format. Expected 3 or 4 sections, got {}.", sections.size());
 			return false;
 		}
 
-		bool duplicate = false;
-		const auto& collection_info = sections[0];
+		const auto& name = sections[0];
 
-		if(collections_.contains(collection_info))
+		if(collections_.contains(name) || groups_.contains(name))
 		{
-			log::Error("Collection {} exists.", collection_info);
+			log::Error("Collection {} exists.", name);
 			infos_[ift::COLLE_DUP]++;
-			duplicate = true;
-		}
 
-		const auto& forms_info = sections[1];
-		const auto forms_sections = string::split(forms_info, ",");
-		std::vector<RE::TESForm*> forms;
-		int missing = 0;
-		for(auto& fs : forms_sections)
-		{
-            //TODO: Finding Forms.
-		}
-
-		if(duplicate)
-		{
 			log::Warn("Entry will be omitted due to incorrect Collection name.");
 			return false;
 		}
 
-		if(!forms.empty())
+		auto form_type = sections[1];
+		ToLower(form_type);
+		if(!FORM_TYPES.contains(form_type))
 		{
-			collections_.emplace(std::piecewise_construct, std::forward_as_tuple(collection_info), std::forward_as_tuple(forms));
-			if(log::debug_mode)
-				log::Info("Forms Collection \"{}\" added with {} Forms, {} missing Forms.", collection_info, forms.size(), missing);
-		}
-		else
-		{
-			log::Info("Forms Collection \"{}\" was omitted because it does not have valid Forms.", collection_info);
+			log::Error("Collection {} has not supported FormType {}.", name, form_type);
+			infos_[ift::COLLE_NE]++;
+
+			log::Warn("Entry will be omitted due to incorrect FormType name.");
 			return false;
+		}
+
+		const auto& keywords_info = sections[2];
+		for(const Strings keywords_list = string::split(keywords_info, ","); std::string keyword : keywords_list)
+		{
+			bool remove = false;
+			if(keyword[0] == '-')
+			{
+				keyword.erase(0, 1);
+				remove = true;
+			}
+
+            bool found = false;
+            RE::BGSKeyword* form = nullptr;
+            const auto& it = keywords_cache_.find(keyword);
+			found = (it != keywords_cache_.end());
+
+            if(found)
+	            form = it->second;
+			else
+                found = (form = FindForm<RE::BGSKeyword>(keyword))!= nullptr;
+
+			if(!found)
+			{
+				log::Error("Keyword {} do not exist!", keyword);
+				if(collections_data_.contains(name))
+					collections_data_.erase(name);
+				return false;
+			}
+			else
+			{
+				if(remove)
+					collections_data_[name].second.push_back(form);
+				else
+					collections_data_[name].first.push_back(form);
+			}
+		}
+
+		if(sections.size() == 4)
+			if(const auto res = evaluateFilter(sections[3]); res != 1)
+				return res == 0 ? false : true;
+
+		collections_form_types_[form_type].emplace(name);
+		collections_[name] = {};
+		if(log::debug_mode)
+			log::Info("[{}-{}] Collection \"{}\" with [+]{} [-]{} keywords added.", form_type, collections_form_types_[form_type].size(), name, collections_data_[name].first.size(), collections_data_[name].second.size());
+
+		return true;
+	}
+
+	inline bool Manipulator::addAllParsedCollections()
+	{
+		return addParsedCollection<RE::TESObjectARMO>("armor"sv) &&
+			   addParsedCollection<RE::TESObjectWEAP>("weapon"sv) &&
+			   addParsedCollection<RE::TESAmmo>("ammo"sv) &&
+			   addParsedCollection<RE::TESObjectARMO>("magiceffect"sv) &&
+			   addParsedCollection<RE::AlchemyItem>("alchemyitem"sv) &&
+			   addParsedCollection<RE::ScrollItem>("scroll"sv) &&
+			   addParsedCollection<RE::BGSLocation>("location"sv) &&
+			   addParsedCollection<RE::IngredientItem>("ingredient"sv) &&
+			   addParsedCollection<RE::TESObjectBOOK>("book"sv) &&
+			   addParsedCollection<RE::TESObjectMISC>("misc"sv) &&
+			   addParsedCollection<RE::TESKey>("key"sv) &&
+			   addParsedCollection<RE::TESSoulGem>("soulgem"sv) &&
+			   addParsedCollection<RE::TESObjectACTI>("activator"sv) &&
+			   addParsedCollection<RE::TESFlora>("flora"sv) &&
+			   addParsedCollection<RE::TESFurniture>("furniture"sv) &&
+			   addParsedCollection<RE::TESRace>("race"sv) &&
+			   addParsedCollection<RE::BGSTalkingActivator>("talkingactivator"sv) &&
+			   addParsedCollection<RE::EnchantmentItem>("enchantment"sv) &&
+			   addParsedCollection<RE::TESNPC>("npc"sv) &&
+			   addParsedCollection<RE::SpellItem>("spell"sv);
+	}
+
+	template<class T>
+	inline bool Manipulator::addParsedCollection(std::string_view formType)
+	{
+		static const auto data_handler = RE::TESDataHandler::GetSingleton();
+		if(!data_handler)
+			return false;
+
+		const auto it = collections_form_types_.find(formType);
+		if(log::debug_mode)
+		{
+			if(it != collections_form_types_.end())
+				log::Info("{} {} collections found.", it->second.size(), formType);
+			else if(log::debug_mode)
+				log::Info("{} collections do not exist in any ini file.", formType);
+		}
+
+		if(it == collections_form_types_.end())
+			return true;
+
+		for(RE::TESForm* form : data_handler->GetFormArray<T>())
+		{
+			if(!form)
+				continue;
+
+			const auto bgs_keyword_form = form->As<RE::BGSKeywordForm>();
+			Set<RE::BGSKeyword*> form_keywords = { bgs_keyword_form->keywords, bgs_keyword_form->keywords + bgs_keyword_form->numKeywords };
+
+			// if(log::debug_mode)
+			// 	log::Info("[{}] {} >>>> {}", GetEditorId(form), form->GetName(), form_keywords.size());
+
+			if(form_keywords.empty())
+				continue;
+
+			for(const auto& [name, filter_keywords] : collections_data_)
+			{
+				// if(log::debug_mode)
+				// {
+				// 	log::Info("Collection {} [{} | {}]", name, filter_keywords.first.size(), filter_keywords.second.size());
+				// }
+
+				bool add = true;
+
+				if(!filter_keywords.first.empty())
+					for(const auto& k : filter_keywords.first)
+						if(!form_keywords.contains(k))
+						{
+							add = false;
+							break;
+						}
+
+				if(!filter_keywords.second.empty())
+					for(const auto& k : filter_keywords.second)
+						if(form_keywords.contains(k))
+						{
+							add = false;
+							break;
+						}
+
+				if(add)
+				{
+					if(log::debug_mode)
+						log::Info("Collection {} <== [{}] {}", name, GetEditorId(form), form->GetName());
+
+					collections_[name].push_back(form);
+				}
+			}
 		}
 
 		return true;
@@ -905,7 +1142,7 @@ namespace flm
 
 	inline bool Manipulator::parseFilter(const std::string& entry)
 	{
-		const auto sections = string::split(SanitizeFilter(entry), "|");
+		const Strings sections = string::split(SanitizeFilter(entry), "|"sv);
 		if(sections.size() != 2)
 		{
 			log::Error("Wrong Filter format. Expected 2 sections, got {}.", sections.size());
@@ -940,7 +1177,7 @@ namespace flm
 
 	inline bool Manipulator::parseModEvent(const std::string& entry)
 	{
-		const auto sections = string::split(entry, "|");
+		const Strings sections = string::split(entry, "|"sv);
 		if(sections.size() != 3)
 		{
 			log::Error("Wrong FormList format. Expected 3 sections, got {}.", sections.size());
@@ -966,7 +1203,7 @@ namespace flm
 		}
 
 		auto form_list_info = sections[1];
-		std::vector<RE::BGSListForm*> form_lists;
+		FormsLists form_lists;
 
 		if(form_list_info.starts_with("#"))
 		{
@@ -993,8 +1230,8 @@ namespace flm
 		}
 
 		const auto& forms_info = sections[2];
-		auto forms_sections = string::split(forms_info, ",");
-		std::vector<RE::TESForm*> forms;
+		Strings forms_sections = string::split(forms_info, ",");
+		Forms forms;
 		int missing = 0;
 		for(auto& fs : forms_sections)
 			if(parseFormEntry(fs, forms) == -1)
@@ -1008,11 +1245,10 @@ namespace flm
 
 		if(!form_lists.empty() && !forms.empty())
 		{
-			auto& events = event_manager_.Events();
-			if(!events.contains(event_name))
-				events.emplace(event_name, FormListsData());
+			if(!mod_events_.contains(event_name))
+				mod_events_.emplace(event_name, FormListsData());
 
-			FormListsData& mod_event_data = events[event_name];
+			FormListsData& mod_event_data = mod_events_[event_name];
 
 			for(auto& fl : form_lists)
 			{
@@ -1061,9 +1297,9 @@ namespace flm
 		return parsePair(entry, std::make_tuple("Dragonborn Spider Crafting"sv, "Recipe"sv, "Result"sv), dragon_spider_crafting_);
 	}
 
-	inline bool Manipulator::parseList(const std::string& entry, const std::string_view& entryName, std::vector<RE::TESForm*>& list)
+	inline bool Manipulator::parseList(const std::string entry, const std::string_view entryName, Forms& list)
 	{
-		const auto sections = string::split(entry, "|");
+		const Strings sections = string::split(entry, "|"sv);
 		if(sections.size() != 1 && sections.size() != 2)
 		{
 			log::Error("Wrong {} format. Expected 1 or 2 sections, got {}.", entryName, sections.size());
@@ -1075,7 +1311,7 @@ namespace flm
 				return res == 0 ? false : true;
 
 		const auto& forms_info = sections[0];
-		auto forms_sections = string::split(forms_info, ",");
+		Strings forms_sections = string::split(forms_info, ",");
 		int amount = 0;
 		int missing = 0;
 		for(auto& fs : forms_sections)
@@ -1093,9 +1329,9 @@ namespace flm
 		return true;
 	}
 
-	inline bool Manipulator::parsePair(const std::string& entry, const PairEntryNames& names, std::vector<FormPair>& list, const bool plantTypesWarn)
+	inline bool Manipulator::parsePair(const std::string& entry, const PairEntryNames& names, FormsPairs& list, const bool plantTypesWarn)
 	{
-		const auto sections = string::split(entry, "|");
+		const Strings sections = string::split(entry, "|"sv);
 		if(sections.size() != 2 && sections.size() != 3)
 		{
 			log::Error("Wrong {} format. Expected 2 or 3 sections, got {}.", std::get<0>(names), sections.size());
@@ -1183,7 +1419,7 @@ namespace flm
 		else if(meet_criteria == -1)
 		{
 			if(log::debug_mode)
-				log::Info("Filter \"{}\" does not have valid conditions.", filter);
+				log::Info("Filter \"{}\" does not meet the conditions.", filter);
 			infos_[ift::ENTRIES_FO]++;
 		}
 		else if(meet_criteria == 0)
@@ -1195,11 +1431,11 @@ namespace flm
 		return meet_criteria;
 	}
 
-	inline int Manipulator::parseFormEntry(std::string& entry, std::vector<RE::TESForm*>& forms)
+	inline int Manipulator::parseFormEntry(std::string& entry, Forms& forms)
 	{
 		if(entry.starts_with("#"))
 		{
-            bool not_found = true;
+			bool not_found = true;
 			entry.erase(0, 1);
 			if(groups_.contains(entry))
 			{
@@ -1217,8 +1453,8 @@ namespace flm
 			{
 				log::Error("Unknown Group/Collection: {}.", entry);
 				infos_[ift::GROUPS_NE]++;
-                infos_[ift::COLLE_NE]++;
-                return -2;
+				infos_[ift::COLLE_NE]++;
+				return -2;
 			}
 		}
 		else if(entry.starts_with("*"))

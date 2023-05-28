@@ -6,7 +6,7 @@ message("Using toolchain file ${CMAKE_TOOLCHAIN_FILE}.")
 ########################################################################################################################
 project(
     FormListManipulator
-    VERSION 1.6.0.0
+    VERSION 1.7.0.0
     DESCRIPTION "Allows dynamic modification of FormLists."
     LANGUAGES CXX
 )
@@ -32,15 +32,12 @@ configure_file(
 
 set(sources
 		Src/main.cpp
-		Src/Manipulator
 		Src/Plugin.hpp
-		Src/Utility
 		Src/Manipulator/EventManager.hpp
 		Src/Manipulator/Manipulator.hpp
 		Src/Manipulator/RegisterFuncs.hpp
 		Src/Utility/ExternalModules.hpp
 		Src/Utility/LogInfo.hpp
-		Src/Utility/Types
 		Src/Utility/Utility.hpp
 		Src/Utility/Types/EntryType.hpp
 		Src/Utility/Types/FormListType.hpp
@@ -61,7 +58,8 @@ source_group(
 ## Configure target DLL.
 ########################################################################################################################
 find_package(CommonLibSSE CONFIG REQUIRED)
-find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
+find_package(unordered_dense CONFIG REQUIRED)
+find_package(tsl-ordered-map CONFIG REQUIRED)
 find_path(MERGEMAPPER_INCLUDE_DIRS "MergeMapperPluginAPI.h")
 find_path(CLIB_UTIL_INCLUDE_DIRS "ClibUtil/utils.hpp")
 
@@ -71,18 +69,24 @@ add_commonlibsse_plugin(
 	${PROJECT_AUTHOR_EMAIL}
 	${PROJECT_VERSION}
 	SOURCES ${sources} 
-	${SIMPLEINI_INCLUDE_DIRS}/ConvertUTF.c
 	${MERGEMAPPER_INCLUDE_DIRS}/MergeMapperPluginAPI.cpp
 	)
 add_library("${PROJECT_NAME}::${PROJECT_NAME}" ALIAS "${PROJECT_NAME}")
 
 target_include_directories(${PROJECT_NAME}
         PRIVATE
-        Src
-		${SIMPLEINI_INCLUDE_DIRS}
+		${CMAKE_CURRENT_BINARY_DIR}/include
+		${CMAKE_CURRENT_SOURCE_DIR}/src
 		${MERGEMAPPER_INCLUDE_DIRS}
 		${CLIB_UTIL_INCLUDE_DIRS}
         )
+
+target_link_libraries(
+	${PROJECT_NAME}
+	PRIVATE
+		unordered_dense::unordered_dense
+		tsl::ordered_map
+)
 
 target_precompile_headers(${PROJECT_NAME}
         PRIVATE
@@ -108,6 +112,7 @@ add_custom_command(
 	TARGET "${PROJECT_NAME}"
 	POST_BUILD
 	COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:${PROJECT_NAME}>" "${DLL_FOLDER}"
+    COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.pdb" "${DLL_FOLDER}" DEPENDS "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.pdb"
 	COMMENT "Copying dll: ${PROJECT_NAME}.dll to ${DLL_FOLDER}."
 	VERBATIM
 )
